@@ -7,7 +7,7 @@ class Items (models.Model) :
     class Meta :
         pass
 
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255 , unique=True)
     description = models.CharField(max_length=255)
     unit_price = models.DecimalField()
 
