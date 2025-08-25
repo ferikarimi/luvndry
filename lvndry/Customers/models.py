@@ -10,3 +10,4 @@ class Customers (models.Model):
     fullname = models.CharField(max_length=255)
     phone = PhoneNumberField(unique=True)
     address = models.CharField(255 , null=True , blank=True)
+    code = models.PositiveIntegerField(unique=True , null=True , blank=True)
