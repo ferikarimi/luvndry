@@ -1,8 +1,8 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer
-from .models import Customers
+from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer
+from .models import Customers , Comments
 
 
 
@@ -48,5 +48,31 @@ class CustomerFind (APIView):
         return Response(serializer.data)
 
 
-class CustomerComments ():
-    pass
+class CustomerCommentsCreate (APIView):
+    def post (self , request):
+        serializer = CommentCreateSerializer(data=request.data)
+        if serializer.is_valid():
+            comment = serializer.save()
+            return Response ({"MESSAGE : Your comment has been submitted and will be displayed after approval."} , status=201)
+        return Response (serializer.errors , status=400)
+
+
+class AdminCommentList (APIView):
+    def get (self , request):
+        comments = Comments.objects.all().order_by('-created_at')
+        serializer = CommentAdminSerializer(comments , many=True)
+        return Response (serializer.data , status=200)
+    
+
+class AdminCommentStatus (APIView):
+    def patch (self , request , pk):
+        try :
+            comment = Comments.objects.get(id=pk)
+        except Comments.DoesNotExist :
+            return Response ({"ERROR : comment not found!"} , status=404)
+        
+        serilizer = CommentAdminSerializer (comment , data=request.data , partial=True)
+        if serilizer.is_valid():
+            serilizer.save()
+            return Response (serilizer.data , status=200)
+        return Response (serilizer.errors , status=400)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Customers
+from .models import Customers , Comments
 
 
 
@@ -50,3 +50,29 @@ class CustomerInfoSerializer (serializers.ModelSerializer):
         model = Customers
         fields = ['code','phone']
         read_only_fields = ['code','phone']
+
+
+
+class CommentCreateSerializer (serializers.ModelSerializer):
+    phone = serializers.CharField(write_only=True)
+
+    class Meta:
+        model = Comments
+        fields = ['phone','text']
+
+    def create(self, validated_data):
+        phone = validated_data.pop("phone")
+        try:
+            customer = Customers.objects.get(phone=phone)
+        except Customers.DoesNotExist :
+            raise serializers.ValidationError({"ERROR : You must have used our services to be able to comment."})
+        comment = Comments.objects.create(customer=customer , **validated_data)
+        return comment
+    
+
+class CommentAdminSerializer(serializers.ModelSerializer):
+    customer = serializers.StringRelatedField(read_only=True)
+
+    class Meta :
+        model = Comments
+        fields = '__all__'
