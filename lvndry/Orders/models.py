@@ -13,18 +13,19 @@ class Orders (models.Model):
         ('Delivered'  , 'Delivered' )
     ]
 
-    order_code = models.ForeignKey()
+    # order_code = models.ForeignKey()
     customer_id = models.ForeignKey(Customers , on_delete=models.CASCADE)
-    discount_amount = models.DecimalField(default=0)
-    total_amount = models.DecimalField()
-    final_amount = models.DecimalField()
-    status = models.CharField(choices=STATUS_CHOICE_FIELDS ,default='Received')
+    discount_amount = models.IntegerField(default=0)
+    total_amount = models.IntegerField()
+    final_amount = models.IntegerField()
+    status = models.CharField(choices=STATUS_CHOICE_FIELDS ,default='Received',max_length=15)
     order_time = models.DateTimeField(auto_now_add=True)
-    delivey_time = models.DateTimeField()
+    delivey_time = models.DateTimeField(null=True , blank=True)
 
 
 class OrderItems (models.Model):
-    order_id = models.ForeignKey(Orders , on_delete=models.CASCADE)
-    item_id = models.ForeignKey(Items , on_delete=models.CASCADE)
-    quantity = models.IntegerField(default=1)
-    unit_price = models.DecimalField()
+    order = models.ForeignKey(Orders , on_delete=models.CASCADE , related_name="order_items")
+    item = models.ForeignKey(Items , on_delete=models.PROTECT)
+    cloth_name = models.CharField (max_length=255)
+    quantity = models.PositiveIntegerField(default=1)
+    unit_price = models.IntegerField()
