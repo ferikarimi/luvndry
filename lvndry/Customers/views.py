@@ -1,8 +1,9 @@
 from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer
+from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer , CommentRecentlySerializer
 from .models import Customers , Comments
+
 
 
 
@@ -52,7 +53,7 @@ class CustomerCommentsCreate (APIView):
     def post (self , request):
         serializer = CommentCreateSerializer(data=request.data)
         if serializer.is_valid():
-            comment = serializer.save()
+            serializer.save()
             return Response ({"MESSAGE : Your comment has been submitted and will be displayed after approval."} , status=201)
         return Response (serializer.errors , status=400)
 
@@ -71,8 +72,16 @@ class AdminCommentStatus (APIView):
         except Comments.DoesNotExist :
             return Response ({"ERROR : comment not found!"} , status=404)
         
-        serilizer = CommentAdminSerializer (comment , data=request.data , partial=True)
-        if serilizer.is_valid():
-            serilizer.save()
-            return Response (serilizer.data , status=200)
-        return Response (serilizer.errors , status=400)
+        serializer = CommentAdminSerializer (comment , data=request.data , partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response (serializer.data , status=200)
+        return Response (serializer.errors , status=400)
+    
+
+
+class CommentRecently (APIView):
+    def get(self , request):
+        recent_comments = Comments.objects.filter(status='approved').order_by('-created_at')[:4]
+        serializer = CommentRecentlySerializer(recent_comments , many=True)
+        return Response (serializer.data , status=200)

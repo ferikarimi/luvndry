@@ -7,9 +7,9 @@ from phonenumber_field.modelfields import PhoneNumberField
 class Customers (models.Model):
     class Meta:
         pass
-    fullname = models.CharField(max_length=255)
+    fullname = models.CharField(max_length=255 , null=True , blank=True)
     phone = PhoneNumberField(unique=True)
-    address = models.CharField(255 , null=True , blank=True)
+    address = models.CharField(max_length=255 , null=True , blank=True)
     code = models.PositiveIntegerField(unique=True , null=True , blank=True)
 
 
@@ -22,7 +22,7 @@ class Comments (models.Model):
     ]
     customer = models.ForeignKey(Customers , on_delete=models.CASCADE , related_name='comments')
     text = models.TextField()
-    status = models.CharField(choices=STATUS_CHOICE , default='pending')
+    status = models.CharField(choices=STATUS_CHOICE , default='pending' , max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
 

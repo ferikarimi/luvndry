@@ -1,8 +1,6 @@
 from rest_framework import serializers
 from .models import Customers , Comments
-
-
-
+import jdatetime
 
 
 
@@ -76,3 +74,18 @@ class CommentAdminSerializer(serializers.ModelSerializer):
     class Meta :
         model = Comments
         fields = '__all__'
+
+
+class CommentRecentlySerializer (serializers.ModelSerializer):
+    created_at_jalili = serializers.SerializerMethodField()
+    class Meta :
+        model = Comments
+        fields = ['customer','text','created_at','created_at_jalili']
+        read_only_fields = ['created_at','created_at_jalili']
+
+
+    def get_created_at_jalili (self , obj):
+        if obj.created_at :
+            jalili_data = jdatetime.datetime.fromgregorian(datetime=obj.created_at)
+            return jalili_data.strftime('%Y/%m/%d - %H:%M')
+        return None
