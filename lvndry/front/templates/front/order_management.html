@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>مدیریت سفارش خشک‌شویی</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+h2 { margin-top: 40px; }
+input, select, button { margin: 5px 0; padding: 5px; }
+.item { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
+.message { color: #333; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<h1>سیستم مدیریت سفارش خشک‌شویی</h1>
+
+<div id="message" class="message"></div>
+
+<h2>ثبت سفارش جدید</h2>
+<form id="createOrderForm">
+  شماره تلفن مشتری: <input type="text" name="phone" required><br><br>
+
+  <div id="itemsContainer"></div>
+  <button type="button" id="addItemBtn">اضافه کردن آیتم</button><br><br>
+  <button type="submit">ثبت سفارش</button>
+</form>
+
+<hr>
+
+<h2>ویرایش سفارش</h2>
+<form id="updateOrderForm">
+  سفارش ID: <input type="number" name="orderId" required><br>
+  وضعیت: 
+  <select name="status">
+    <option value="">انتخاب کنید</option>
+    <option value="Received">دریافت شده</option>
+    <option value="In progress">در حال انجام</option>
+    <option value="Completed">تکمیل شده</option>
+    <option value="Delivered">تحویل شده</option>
+  </select><br>
+  زمان تحویل (YYYY-MM-DD HH:MM:SS): <input type="text" name="delivery"><br>
+  <button type="submit">ویرایش سفارش</button>
+</form>
+
+<hr>
+
+<h2>حذف سفارش</h2>
+<form id="deleteOrderForm">
+  سفارش ID: <input type="number" name="orderId" required>
+  <button type="submit">حذف سفارش</button>
+</form>
+
+<script>
+const itemsContainer = document.getElementById("itemsContainer");
+const messageDiv = document.getElementById("message");
+
+function addItem(cloth='', itemId=0, quantity=1, unitPrice=0){
+  const div = document.createElement('div');
+  div.classList.add('item');
+  div.innerHTML = `
+    خدمت: <input type="number" class="itemId" placeholder="id خدمت" value="${itemId}" required>
+    لباس: <input type="text" class="clothName" placeholder="پتو، کت و شلوار..." value="${cloth}" required>
+    تعداد: <input type="number" class="quantity" value="${quantity}" required>
+    قیمت واحد: <input type="number" class="unitPrice" value="${unitPrice}" required>
+    <button type="button" class="removeBtn">حذف</button>
+  `;
+  div.querySelector('.removeBtn').addEventListener('click', ()=> div.remove());
+  itemsContainer.appendChild(div);
+}
+
+addItem();
+document.getElementById('addItemBtn').addEventListener('click', ()=> addItem());
+
+document.getElementById('createOrderForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال ثبت سفارش...';
+
+  const phoneVal = e.target.phone.value.trim();
+  const itemsEls = document.querySelectorAll('#itemsContainer .item');
+  const items = Array.from(itemsEls).map(el=>({
+    item: parseInt(el.querySelector('.itemId').value),
+    cloth_name: el.querySelector('.clothName').value,
+    quantity: parseInt(el.querySelector('.quantity').value),
+    unit_price: parseInt(el.querySelector('.unitPrice').value)
+  }));
+
+  if(!phoneVal || items.length === 0){
+    messageDiv.textContent = 'لطفاً همه فیلدها را پر کنید.';
+    return;
+  }
+
+  try{
+    const response = await fetch('orders/ordercreate/', {
+      method:'POST',
+      credentials: 'same-origin',
+      headers:{'Content-Type':'application/json', 'Accept':'application/json'},
+      body: JSON.stringify({phone: phoneVal, items: items, discount_amount:0})
+    });
+    const data = await response.json();
+    if(response.ok){
+      messageDiv.textContent = `سفارش ثبت شد! ID: ${data.id}`;
+      e.target.reset();
+      itemsContainer.innerHTML = '';
+      addItem();
+    } else {
+      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
+    }
+  }catch(err){
+    console.error(err);
+    messageDiv.textContent = 'خطا در اتصال به سرور';
+  }
+});
+
+document.getElementById('updateOrderForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال بروزرسانی سفارش...';
+
+  const id = e.target.orderId.value.trim();
+  const payload = {};
+  if(e.target.status.value) payload.status = e.target.status.value;
+  if(e.target.delivery.value) payload.delivey_time = e.target.delivery.value;
+
+  try{
+    const response = await fetch(`orders/orderupdate/${id}/`, {
+      method:'PATCH',
+      credentials:'same-origin',
+      headers:{'Content-Type':'application/json','Accept':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    if(response.ok){
+      messageDiv.textContent = 'سفارش بروزرسانی شد!';
+      e.target.reset();
+    } else {
+      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
+    }
+  }catch(err){
+    console.error(err);
+    messageDiv.textContent = 'خطا در اتصال به سرور';
+  }
+});
+
+document.getElementById('deleteOrderForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال حذف سفارش...';
+
+  const id = e.target.orderId.value.trim();
+  try{
+    const response = await fetch(`/orders/orderdelete/${id}/`,{
+      method:'DELETE',
+      credentials:'same-origin',
+      headers:{'Accept':'application/json'}
+    });
+    if(response.ok){
+      messageDiv.textContent = 'سفارش حذف شد!';
+      e.target.reset();
+    } else {
+      const data = await response.json();
+      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
+    }
+  }catch(err){
+    console.error(err);
+    messageDiv.textContent = 'خطا در اتصال به سرور';
+  }
+});
+</script>
+
+</body>
+</html>

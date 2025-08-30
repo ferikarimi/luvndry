@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>مدیریت کامنت‌ها</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+.comment-card {
+  border: 1px solid #ddd;
+  padding: 15px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+  background: #f9f9f9;
+}
+.comment-card p { margin: 5px 0; }
+select { padding: 3px 5px; }
+#message { margin-bottom: 15px; color: #333; }
+</style>
+</head>
+<body>
+
+<h1>مدیریت کامنت‌ها</h1>
+<div id="message">در حال بارگذاری کامنت‌ها...</div>
+<div id="commentsList"></div>
+
+<script>
+const commentsList = document.getElementById('commentsList');
+const messageDiv = document.getElementById('message');
+
+async function loadComments() {
+  messageDiv.textContent = 'در حال بارگذاری کامنت‌ها...';
+  try {
+    const response = await fetch('/customers/admincommentlist/', {
+      method: 'GET',
+      credentials: 'same-origin',
+      headers: { 'Accept': 'application/json' }
+    });
+    const data = await response.json();
+
+    if(!Array.isArray(data) || data.length === 0){
+      commentsList.innerHTML = '<div>هیچ نظری ثبت نشده است.</div>';
+      messageDiv.textContent = '';
+      return;
+    }
+
+    commentsList.innerHTML = '';
+    data.forEach(comment => {
+      const div = document.createElement('div');
+      div.classList.add('comment-card');
+      div.innerHTML = `
+        <p><strong>${comment.customer}</strong> گفت:</p>
+        <p>${comment.text}</p>
+        <p>تاریخ: ${comment.created_at ? new Date(comment.created_at).toLocaleString('fa-IR') : ''}</p>
+        <p>وضعیت: 
+          <select data-id="${comment.id}" class="statusSelect">
+            <option value="pending" ${comment.status==='pending'?'selected':''}>در انتظار</option>
+            <option value="approved" ${comment.status==='approved'?'selected':''}>تایید شده</option>
+            <option value="rejected" ${comment.status==='rejected'?'selected':''}>رد شده</option>
+          </select>
+        </p>
+      `;
+      commentsList.appendChild(div);
+    });
+
+    messageDiv.textContent = '';
+
+    // اضافه کردن event listener به همه select ها
+    document.querySelectorAll('.statusSelect').forEach(sel=>{
+      sel.addEventListener('change', async (e)=>{
+        const id = e.target.dataset.id;
+        const status = e.target.value;
+        messageDiv.textContent = 'در حال بروزرسانی وضعیت...';
+        try {
+          const res = await fetch(`/customers/admincommentstatus/${id}/`, {
+            method:'PATCH',
+            credentials:'same-origin',
+            headers:{'Content-Type':'application/json','Accept':'application/json'},
+            body: JSON.stringify({status})
+          });
+          const data = await res.json();
+          if(res.ok){
+            messageDiv.textContent = 'وضعیت کامنت بروزرسانی شد!';
+            setTimeout(()=>{ messageDiv.textContent = ''; }, 2000);
+          } else {
+            messageDiv.textContent = 'خطا: '+JSON.stringify(data);
+          }
+        } catch(err){
+          console.error(err);
+          messageDiv.textContent = 'خطا در اتصال به سرور';
+        }
+      });
+    });
+
+  } catch(err){
+    console.error(err);
+    messageDiv.textContent = 'خطا در بارگذاری کامنت‌ها';
+  }
+}
+
+// بارگذاری اولیه کامنت‌ها
+loadComments();
+</script>
+
+</body>
+</html>
