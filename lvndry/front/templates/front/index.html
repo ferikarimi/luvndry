@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta content="width=device-width, initial-scale=1.0" name="viewport">
-  <title>Index - Yummy Bootstrap Template</title>
+  <title>Lvendry</title>
   <meta name="description" content="">
   <meta name="keywords" content="">
 
@@ -67,6 +67,9 @@
           <li><a href="#contact">تیم ما</a></li>
           <li><a href="#contact">پیگیری سفارشات</a></li>
           <li><a href="#contact">چگونه مارا پیدا کنید</a></li>
+          
+          <li><a href="{% url 'customer_home_page' %}">مدیریت</a></li>
+
 
 
           <!-- <li class="dropdown"><a href="#"><span>Dropdown</span> <i class="bi bi-chevron-down toggle-dropdown"></i></a>
@@ -906,62 +909,116 @@
 
     </section><!-- /Chefs Section -->
 
-    <!-- Book A Table Section -->
-    <section id="book-a-table" class="book-a-table section">
 
-      <!-- Section Title -->
-      <div class="container section-title" data-aos="fade-up">
-        <h2>Book A Table</h2>
-        <p><span>Book Your</span> <span class="description-title">Stay With Us<br></span></p>
-      </div><!-- End Section Title -->
 
-      <div class="container">
 
-        <div class="row g-0" data-aos="fade-up" data-aos-delay="100">
 
-          <div class="col-lg-4 reservation-img" style="background-image: url(assets/img/reservation.jpg);"></div>
 
-          <div class="col-lg-8 d-flex align-items-center reservation-form-bg" data-aos="fade-up" data-aos-delay="200">
-            <form action="forms/book-a-table.php" method="post" role="form" class="my-comment-form">
-              <div class="row gy-4">
-                <div class="col-lg-4 col-md-6">
-                  <input type="text" name="name" class="form-control" id="name" placeholder="Your Name" required="">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <input type="email" class="form-control" name="email" id="email" placeholder="Your Email" required="">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <input type="text" class="form-control" name="phone" id="phone" placeholder="Your Phone" required="">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <input type="date" name="date" class="form-control" id="date" placeholder="Date" required="">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <input type="time" class="form-control" name="time" id="time" placeholder="Time" required="">
-                </div>
-                <div class="col-lg-4 col-md-6">
-                  <input type="number" class="form-control" name="people" id="people" placeholder="# of people" required="">
-                </div>
-              </div>
 
-              <div class="form-group mt-3">
-                <textarea class="form-control" name="message" rows="5" placeholder="Message"></textarea>
-              </div>
 
-              <div class="text-center mt-3">
-                <div class="loading">Loading</div>
-                <div class="error-message"></div>
-                <div class="sent-message">Your booking request was sent. We will call back or send an Email to confirm your reservation. Thank you!</div>
-                <button type="submit">Book a Table</button>
-              </div>
-            </form>
-          </div><!-- End Reservation Form -->
 
-        </div>
+
+
+
+
+<!-- جایگزین کامل بخش Order Tracking -->
+<section id="order-tracking" class="book-a-table section">
+  <div class="container section-title" data-aos="fade-up">
+    <h2>پیگیری سفارش</h2>
+    <p><span>وضعیت</span> <span class="description-title">آخرین سفارش شما</span></p>
+  </div>
+
+  <div class="container-fluid p-0">
+    <div class="row g-0 reservation-form-bg" data-aos="fade-up" data-aos-delay="100">
+      <div class="col-lg-12 d-flex align-items-center justify-content-center">
+
+        <!-- فرم با id مشخص -->
+        <form id="orderForm" class="my-comment-form" action="javascript:void(0);">
+          <div class="row gy-4 justify-content-center">
+            <div class="col-lg-12 col-md-12 col-12">
+              <input type="text" class="form-control" name="phone" id="phone" placeholder="شماره موبایل خود را وارد کنید" required>
+            </div>
+          </div>
+
+          <div class="text-center mt-3">
+            <div id="loading" class="loading" style="display:none;">در حال بررسی...</div>
+            <div id="error-message" class="error-message" style="color:red; margin-top:8px;"></div>
+            <div id="result-message" class="result-message" style="color:green; margin-top:8px; display:none;"></div>
+            <button type="button" id="checkOrderBtn" class="btn btn-primary mt-2">بررسی وضعیت</button>
+          </div>
+
+          <div id="order-status" class="text-center mt-3" style="margin-top:12px;"></div>
+        </form>
 
       </div>
+    </div>
+  </div>
+</section>
 
-    </section><!-- /Book A Table Section -->
+<script>
+
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     <!-- Gallery Section -->
     <section id="gallery" class="gallery section light-background">
@@ -1287,6 +1344,153 @@
       errorMessage.textContent = 'خطای شبکه. لطفاً دوباره تلاش کنید.';
     }
   });
+
+
+
+
+
+
+
+
+
+
+
+/* ----- debug-ready order-tracking script ----- */
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('[order-tracking] script loaded');
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  // DOM elements
+  const form = document.getElementById('orderForm');
+  const phoneInput = document.getElementById('phone');
+  const btn = document.getElementById('checkOrderBtn');
+  const loading = document.getElementById('loading');
+  const errorMessage = document.getElementById('error-message');
+  const resultMessage = document.getElementById('result-message');
+  const orderStatus = document.getElementById('order-status');
+
+  if (!form || !phoneInput || !btn) {
+    console.error('[order-tracking] required elements not found', { form, phoneInput, btn });
+    return;
+  }
+  console.log('[order-tracking] elements found');
+
+  // Prevent Enter from submitting the form (extra safety)
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    return false;
+  });
+  phoneInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btn.click(); // behave like click
+    }
+  });
+
+  // Helper to show messages
+  function showError(text) {
+    errorMessage.textContent = text || '';
+    errorMessage.style.display = text ? 'block' : 'none';
+  }
+  function showResult(text) {
+    resultMessage.textContent = text || '';
+    resultMessage.style.display = text ? 'block' : 'none';
+  }
+
+  // CSRF token (if needed by Django)
+  const csrftoken = getCookie('csrftoken');
+  console.log('[order-tracking] csrftoken:', !!csrftoken);
+
+  btn.addEventListener('click', async () => {
+    showError('');
+    showResult('');
+    orderStatus.innerHTML = '';
+    loading.style.display = 'block';
+
+    const phoneVal = phoneInput.value.trim();
+    console.log('[order-tracking] button clicked, phone:', phoneVal);
+
+    if (!phoneVal) {
+      loading.style.display = 'none';
+      showError('لطفاً شماره تلفن را وارد کنید.');
+      return;
+    }
+
+    try {
+      console.log('[order-tracking] sending POST to /ordertracking/ ...');
+      const response = await fetch('/orders/ordertracking/', {   // <<< اگر urls.py مسیر دیگری دارد این را اصلاح کن
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': csrftoken || ''
+        },
+        body: JSON.stringify({ phone: phoneVal })
+      });
+
+      console.log('[order-tracking] response status:', response.status);
+      // خواندن body (حتی وقتی response.ok==false)
+      let data = null;
+      try {
+        data = await response.json();
+      } catch (jsonErr) {
+        console.warn('[order-tracking] response JSON parse failed', jsonErr);
+      }
+      console.log('[order-tracking] response data:', data);
+
+      loading.style.display = 'none';
+
+      if (response.ok && data && data.status) {
+        // map english status to persian
+        let statusFa = '';
+        switch (data.status) {
+          case 'Received': statusFa = 'سفارش دریافت شد'; break;
+          case 'In progress': statusFa = 'سفارش در حال انجام است'; break;
+          case 'Completed': statusFa = 'سفارش تکمیل شده'; break;
+          case 'Delivered': statusFa = 'سفارش تحویل داده شد'; break;
+          default: statusFa = 'وضعیت ناشناخته';
+        }
+
+        orderStatus.innerHTML = `<div class="alert alert-success">وضعیت: <strong>${statusFa}</strong></div>`;
+      } else {
+        // handle validation errors from backend (your backend returns non_field_errors)
+        if (data && data.non_field_errors) {
+          showError(data.non_field_errors.join(' '));
+          orderStatus.innerHTML = `<div class="alert alert-danger">${data.non_field_errors.join(' ')}</div>`;
+        } else if (data && typeof data === 'object') {
+          // unknown error object
+          const text = Object.values(data).flat().join(' ');
+          showError(text || 'خطایی رخ داده است.');
+          orderStatus.innerHTML = `<div class="alert alert-warning">${text || 'خطایی رخ داده است.'}</div>`;
+        } else {
+          // no JSON or unexpected
+          showError('خطای ناشناخته‌ای رخ داده است. (کد: ' + response.status + ')');
+          orderStatus.innerHTML = `<div class="alert alert-warning">خطای ناشناخته‌ای رخ داده است. (کد: ${response.status})</div>`;
+        }
+      }
+
+    } catch (err) {
+      console.error('[order-tracking] fetch error', err);
+      loading.style.display = 'none';
+      showError('ارتباط با سرور برقرار نشد.');
+      orderStatus.innerHTML = `<div class="alert alert-danger">ارتباط با سرور برقرار نشد.</div>`;
+    }
+  });
+});
 </script>
 
         

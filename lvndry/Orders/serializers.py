@@ -131,3 +131,49 @@ class OrderUpdateSerializer (serializers.ModelSerializer):
     class Meta :
         model = Orders
         fields = ['status', 'delivey_time', 'discount_amount']
+
+
+
+
+
+
+
+
+
+
+
+
+
+class OrderTrackingSerializer (serializers.Serializer):
+    phone = serializers.CharField(write_only=True)
+
+    customer_name = serializers.CharField(source='customer_id.fullname' , read_only=True)
+    customer_phone = serializers.CharField(source='customer_id.phone' , read_only=True)
+
+    @staticmethod
+    def normalize_phone (phone):
+        phone = phone.strip()
+        if phone.startswith("0"):
+            return "+98" + phone[1:]
+        return phone
+    
+    def validate(self, attrs):
+        phone = attrs.get('phone')
+        phone = self.normalize_phone(phone)
+
+        try :
+            customer = Customers.objects.get(phone=phone)
+        except Customers.DoesNotExist :
+            raise serializers.ValidationError({"ERROR : phone does not exist!"})
+        
+        customer_last_order = Orders.objects.filter(customer_id=customer).order_by('-order_time').first()
+        if not customer_last_order :
+            raise serializers.ValidationError ({"ERROR : this customer has not order!"})
+        self.instance = customer_last_order
+        return attrs
+    
+    def to_representation(self, instance):
+        try :
+            return {"status" : instance.status }
+        except AttributeError :
+            return {"status : unknown"}

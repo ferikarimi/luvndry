@@ -12,11 +12,11 @@
   <div class="container text-center mt-5">
 
     <div class="d-grid gap-3 col-6 mx-auto">
-      <a href="customer_acceptance.html" class="btn btn-primary btn-lg">پذیرش مشتری</a>
-      <a href="laundry_management.html" class="btn btn-primary btn-lg">مدیریت خشکشویی</a>
-      <a href="site_management.html" class="btn btn-primary btn-lg">مدیرت سایت</a>
-      <a href="customer_management.html" class="btn btn-primary btn-lg">مدیریت مشتری</a>
-      <a href="orderer_acceptance.html" class="btn btn-primary btn-lg">مدیرت سفارش</a>
+      <a href="{% url 'customer_acceptance' %}" class="btn btn-primary btn-lg">پذیرش مشتری</a>
+      <a href="{% url 'laundry_management' %}" class="btn btn-primary btn-lg">مدیریت خشکشویی</a>
+      <a href="{% url 'site_management' %}" class="btn btn-primary btn-lg">مدیرت سایت</a>
+      <a href="{% url 'customer_management' %}" class="btn btn-primary btn-lg">مدیریت مشتری</a>
+      <a href="{% url 'order_management' %}" class="btn btn-primary btn-lg">مدیرت سفارش</a>
     </div>
   </div>
 

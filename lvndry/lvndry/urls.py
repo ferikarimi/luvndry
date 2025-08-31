@@ -16,11 +16,20 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path , include
-from conf.views import home_page
+from conf.views import home_page , customer_home_page , customer_acceptance , customer_management , site_management , laundry_management , order_management
 
 
 urlpatterns = [
     path('', home_page , name='home' ),
+    path('customer_home_page', customer_home_page , name='customer_home_page' ),
+
+    path('customer_acceptance', customer_acceptance , name='customer_acceptance' ),
+    path('customer_management', customer_management , name='customer_management' ),
+    path('site_management', site_management , name='site_management' ),
+    path('laundry_management', laundry_management , name='laundry_management' ),
+    path('order_management', order_management , name='order_management' ),
+
+
 
     path('admin/', admin.site.urls),
     path('customers/', include('Customers.urls')),

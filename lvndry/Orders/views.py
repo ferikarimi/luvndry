@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .serializers import OrderUpdateSerializer , OrderCreateSerializer
+from .serializers import OrderUpdateSerializer , OrderCreateSerializer , OrderTrackingSerializer
 from rest_framework.response import Response
 from .models import Orders
 
@@ -39,3 +39,17 @@ class OrderDelete (APIView):
         order.delete()
         return Response({"MESSAGE : order deleted successfuly"} , status=204)
 
+
+
+
+
+
+
+
+
+class OrderTracking (APIView):
+    def post (self , request):
+        serializer = OrderTrackingSerializer(data=request.data)
+        if serializer.is_valid():
+            return Response(serializer.data , status=200)
+        return Response (serializer.errors , status=400)
