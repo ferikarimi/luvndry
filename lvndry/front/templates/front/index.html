@@ -1268,7 +1268,7 @@
   async function loadComments() {
     commentsList.innerHTML = '<div>در حال بارگذاری نظرات...</div>';
     try {
-      const response = await fetch('/customers/CommentRecently/', {
+      const response = await fetch('/customers/commentrecently/', {
         method: 'GET',
         credentials: 'same-origin',
         headers: { 'Accept': 'application/json' }
@@ -1320,7 +1320,7 @@
     }
 
     try {
-      const response = await fetch('/customers/CustomerCommentsCreate/', {
+      const response = await fetch('/customers/customercommentscreate/', {
         method: 'POST',
         credentials: 'same-origin',
         headers: {

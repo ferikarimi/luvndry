@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer , CommentRecentlySerializer
@@ -17,34 +17,44 @@ class CustomerRegister(APIView):
     
 
 class CustomerUpdateProfile (APIView):
-    def get (self , request):
-        customer = request.customer
-        serializer = CustomerUpdateProfileSerializer(customer)
-        return Response(serializer.data , status=200)
+    # def get (self , request):
+    #     customer = request.customer
+    #     serializer = CustomerUpdateProfileSerializer(customer)
+    #     return Response(serializer.data , status=200)
 
     def patch (self , request):
-        customer = request.customer
+        code = request.data.get('code')
+        phone = request.data.get('phone')
+
+        if code :
+            customer = get_object_or_404 (Customers , code=code)
+        elif phone :
+            customer = get_object_or_404 (Customers , phone=phone)
+        else :
+            return Response({"ERROR : code or phone is required."} , status=400)
+
         serializer = CustomerUpdateProfileSerializer(customer , data=request.data ,  partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data , status=200)
-        return Response(serializer.errors , status=400)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data , status=200)
 
 
 class CustomerFind (APIView):
-    def get(self , request):
+    def get(self, request):
         code = request.GET.get('code')
         phone = request.GET.get('phone')
 
-        if code :
-            customer = Customers.objects.get(code=code)
-        elif phone :
-            customer = Customers.objects.get(phone=phone)
-        else :
-            return Response("ERROR : phone or code is required.", status=400)
-        
-        if not customer :
-            return Response("ERROR : customer not found" , status=404)
+        if not code and not phone:
+            return Response({"error": "phone or code is required."}, status=400)
+
+        try:
+            if code:
+                customer = Customers.objects.get(code=code)
+            else:
+                customer = Customers.objects.get(phone=phone)
+        except Customers.DoesNotExist:
+            return Response({"error": "customer not found"}, status=404)
+
         serializer = CustomerInfoSerializer(customer)
         return Response(serializer.data)
 

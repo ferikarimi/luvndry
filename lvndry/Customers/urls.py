@@ -5,9 +5,9 @@ from .views import CustomerRegister , CustomerUpdateProfile ,CustomerFind,Custom
 urlpatterns = [
     path('customerregister/', CustomerRegister.as_view() , name='CustomerRegister'),
 
-    path('customerupdateProfile/', CustomerUpdateProfile.as_view() , name='customerUpdateProfile'),
+    path('customerupdateprofile/', CustomerUpdateProfile.as_view() , name='customerUpdateProfile'),
 
-    path('customerFind/', CustomerFind.as_view() , name='CustomerFind'),
+    path('customerfind/', CustomerFind.as_view() , name='CustomerFind'),
 
     path('customercommentscreate/', CustomerCommentsCreate.as_view() , name='CustomerCommentsCreate'),
 

@@ -34,7 +34,7 @@ class CustomerRegisterSerializer (serializers.ModelSerializer):
 class CustomerUpdateProfileSerializer (serializers.ModelSerializer):
     class Meta :
         model = Customers
-        fields = ['phone']
+        fields = ['phone' , 'fullname' , 'address']
 
     def validate_phone (self , value):
         customer = self.instance
@@ -42,12 +42,23 @@ class CustomerUpdateProfileSerializer (serializers.ModelSerializer):
             raise serializers.ValidationError ("ERROR : this phone number already exists!")
         return value
     
+    def validate_fullname (self , value):
+        if not value.strip():
+            raise serializers.ValidationError ("ERROR : fullname cannot be empty!")
+        return value
+    
+    def validate_address (self , value):
+        if not value.strip():
+            raise serializers.ValidationError ("ERROR : address cannot be empty!")
+        return value
+            
+    
 
 class CustomerInfoSerializer (serializers.ModelSerializer):
     class Meta :
         model = Customers
-        fields = ['code','phone']
-        read_only_fields = ['code','phone']
+        fields = ['code','phone' , 'fullname' , 'address']
+        read_only_fields = ['code','phone' , 'fullname' , 'address']
 
 
 

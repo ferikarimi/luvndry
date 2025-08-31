@@ -12,6 +12,9 @@ class Customers (models.Model):
     address = models.CharField(max_length=255 , null=True , blank=True)
     code = models.PositiveIntegerField(unique=True , null=True , blank=True)
 
+    def __str__(self):
+        return f"{self.fullname}"
+
 
 
 class Comments (models.Model):
