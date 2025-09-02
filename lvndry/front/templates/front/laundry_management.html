@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>مدیریت آیتم‌های خشک‌شویی</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+h2 { margin-top: 40px; }
+input, button { margin: 5px 0; padding: 5px; }
+.itemDiv { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
+.message { color: #333; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<h1>مدیریت آیتم‌های خشک‌شویی</h1>
+
+<div id="message" class="message"></div>
+
+<!-- فرم اضافه کردن -->
+<h2>اضافه کردن آیتم</h2>
+<form id="addItemForm">
+    نام آیتم: <input type="text" name="name" required><br>
+    توضیحات: <input type="text" name="description"><br>
+    قیمت واحد: <input type="number" name="unit_price" required><br>
+    <button type="submit">اضافه کردن آیتم</button>
+</form>
+
+<hr>
+
+<!-- فرم ویرایش -->
+<h2>ویرایش آیتم</h2>
+<form id="editItemForm">
+    نام آیتم (قدیمی): <input type="text" name="old_name" required><br>
+    نام جدید (اختیاری): <input type="text" name="name"><br>
+    توضیحات جدید: <input type="text" name="description"><br>
+    قیمت واحد جدید: <input type="number" name="unit_price"><br>
+    <button type="submit">ویرایش آیتم</button>
+</form>
+
+<hr>
+
+<!-- فرم حذف -->
+<h2>حذف آیتم</h2>
+<form id="deleteItemForm">
+    نام آیتم برای حذف: <input type="text" name="name" required>
+    <button type="submit">حذف آیتم</button>
+</form>
+
+<hr>
+
+<h2>لیست آیتم‌ها</h2>
+<div id="itemsList"></div>
+
+<script>
+const messageDiv = document.getElementById("message");
+const itemsList = document.getElementById("itemsList");
+
+// گرفتن CSRF توکن برای POST/PATCH/DELETE
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+
+// 📌 گرفتن لیست آیتم‌ها
+async function fetchItems(){
+  try {
+    const res = await fetch('/items/all/');
+    const data = await res.json();
+    itemsList.innerHTML = '';
+    data.forEach(item => {
+      const div = document.createElement('div');
+      div.classList.add('itemDiv');
+      div.textContent = `نام: ${item.name} | توضیحات: ${item.description} | قیمت: ${item.unit_price}`;
+      itemsList.appendChild(div);
+    });
+  } catch(err){
+    console.error(err);
+    messageDiv.textContent = 'خطا در دریافت لیست آیتم‌ها';
+  }
+}
+
+// 📌 اضافه کردن آیتم
+document.getElementById('addItemForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال اضافه کردن آیتم...';
+
+  const formData = new FormData(e.target);
+  const payload = Object.fromEntries(formData.entries());
+
+  try{
+    const res = await fetch('/items/add/', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(res.ok){
+      messageDiv.textContent = `✅ آیتم '${data.name}' اضافه شد!`;
+      e.target.reset();
+      fetchItems();
+    } else {
+      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
+    }
+  } catch(err){
+    console.error(err);
+    messageDiv.textContent = '❌ خطا در اتصال به سرور';
+  }
+});
+// 📌 ویرایش آیتم بر اساس name
+document.getElementById('editItemForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال ویرایش آیتم...';
+
+  const formData = new FormData(e.target);
+  const oldName = formData.get('old_name');
+  const payload = Object.fromEntries(formData.entries());
+  delete payload.old_name; // old_name نباید داخل payload بره
+
+  // ⚡ اگر name جدید خالی بود، از payload حذفش کن
+  Object.keys(payload).forEach(key => {
+    if(payload[key] === '' || payload[key] === null){
+      delete payload[key];
+    }
+  });
+
+  try{
+    const res = await fetch(`/items/edit/${oldName}/`, {
+      method:'PATCH',
+      headers:{
+        'Content-Type':'application/json',
+        'X-CSRFToken': csrftoken
+      },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if(res.ok){
+      const newName = payload.name || oldName;
+      messageDiv.textContent = `✏️ آیتم '${newName}' ویرایش شد!`;
+      e.target.reset();
+      fetchItems();
+    } else {
+      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
+    }
+  } catch(err){
+    console.error(err);
+    messageDiv.textContent = '❌ خطا در اتصال به سرور';
+  }
+});
+
+
+// 📌 حذف آیتم بر اساس name
+document.getElementById('deleteItemForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  messageDiv.textContent = 'در حال حذف آیتم...';
+
+  const formData = new FormData(e.target);
+  const name = formData.get('name');
+
+  try{
+    const res = await fetch(`/items/delete/${name}/`,{
+      method:'DELETE',
+      headers:{
+        'Accept':'application/json',
+        'X-CSRFToken': csrftoken
+      }
+    });
+    if(res.ok){
+      messageDiv.textContent = `🗑️ آیتم '${name}' حذف شد!`;
+      e.target.reset();
+      fetchItems();
+    } else {
+      const data = await res.json();
+      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
+    }
+  } catch(err){
+    console.error(err);
+    messageDiv.textContent = '❌ خطا در اتصال به سرور';
+  }
+});
+
+// 📌 بارگذاری اولیه لیست
+fetchItems();
+</script>
+
+</body>
+</html>

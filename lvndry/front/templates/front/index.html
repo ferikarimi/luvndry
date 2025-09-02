@@ -41,6 +41,38 @@
   * Author: BootstrapMade.com
   * License: https://bootstrapmade.com/license/
   ======================================================== -->
+
+
+
+
+  <style>
+  /* Floating Sidebar */
+  .floating-sidebar {
+    position: fixed;        /* باعث میشه همیشه ثابت بمونه */
+    top: 75%;               /* فاصله از بالا */
+    left: 20px;             /* فاصله از سمت چپ (میتونی right بزاری که سمت راست بیاد) */
+    display: flex;
+    flex-direction: column; /* آیکون‌ها زیر هم */
+    gap: 15px;              /* فاصله بین آیکون‌ها */
+    background: #fff;
+    padding: 15px 10px;
+    border-radius: 40px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 9999;          /* همیشه بالای همه */
+  }
+
+  .floating-item img {
+    width: 28px;
+    height: 28px;
+    display: block;
+    transition: transform 0.2s ease, filter 0.2s ease;
+  }
+
+  .floating-item img:hover {
+    transform: scale(1.2);
+    filter: drop-shadow(0 0 5px orange);
+  }
+</style>
 </head>
 
 <body class="index-page">
@@ -1614,6 +1646,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <!-- Main JS File -->
   <script src="{% static 'js/main.js' %}"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+  <!-- Floating Sidebar -->
+  <div class="floating-sidebar">
+    <a href="#messages" class="floating-item">
+      <img src="https://cdn-icons-png.flaticon.com/512/1827/1827343.png" alt="Messages">
+    </a>
+    <a href="#location" class="floating-item">
+      <img src="https://cdn-icons-png.flaticon.com/512/684/684908.png" alt="Location">
+    </a>
+    <a href="#phone" class="floating-item">
+      <img src="https://cdn-icons-png.flaticon.com/512/724/724664.png" alt="Phone">
+    </a>
+  </div>
 
 </body>
 
