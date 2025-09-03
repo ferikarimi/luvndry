@@ -1,86 +1,31 @@
 from rest_framework import serializers
 from .models import Orders , OrderItems
-from Items.models import Items
+from Items.models import Clothes , Services
 from Customers.models import Customers
-
-
-
-
-
-
-
-
-
-#     # def validate_quantity (self , value):
-#     #     if value < 1 :
-#     #         raise serializers.ValidationError("The number of items must be less than 1.")
-#     #     return value
-    
-#     # def validate_unit_price (self , value):
-#     #     if value < 0 :
-#     #         raise serializers.ValidationError ("Unit price cannot be negative.")
-#     #     return value
-    
-#     # def validate_item_id (self , value):
-#     #     if not Items.objects.filter(id=value.id).exists():
-#     #         raise serializers.ValidationError ("The selected item does not exist.")
-#     #     return value
-
-
-# class OrderSerializer (serializers.ModelSerializer):
-    
-#     order_items = OrderItemSerializer(many=True)
-#     class Meta :
-#         model = Orders
-#         fields = '__all__'
-
-#     def create(self, validated_data):
-#         order_items_data = validated_data.pop('order_items')
-#         order = Orders.objects.create(**validated_data)
-#         total_amount = 0
-
-#         for item_data in order_items_data :
-#             items = item_data.pop('items')
-#             quantity = item_data.get('quantity',1)
-#             unit_price = sum([i.unit_price for i in items])
-#             order_item = OrderItems.objects.create(order_id=order ,unit_price=unit_price , quantity=quantity)
-
-#             order_item.items.set(items)
-#             total_amount += unit_price * quantity
-#         order.total_amount = total_amount
-#         order.final_amount = total_amount - order.discount_amount
-#         order.save()
-#         return order
-
-
-
-
-
-
-
-
-# class OrderEditSerializer (serializers.ModelSerializer):
-#     class Meta :
-#         model = Orders
-#         fields = '__all__'
-
+from django.utils import timezone
 
 
 
 class OrderItemSerializer (serializers.ModelSerializer):
-    item = serializers.PrimaryKeyRelatedField(queryset=Items.objects.all())
+
+    service = serializers.PrimaryKeyRelatedField(queryset=Services.objects.all())
+    cloth = serializers.PrimaryKeyRelatedField(queryset=Clothes.objects.all())
+    quantity = serializers.IntegerField()
+
     class Meta :
         model = OrderItems
-        fields = ["item", "cloth_name", "quantity", "unit_price"]
-
+        fields = ["service", "cloth", "quantity", "unit_price"]
+        read_only_fields = ["unit_price"]
 
 
 class OrderCreateSerializer (serializers.ModelSerializer):
     phone = serializers.CharField(write_only=True)
     items = OrderItemSerializer(many=True , write_only=True)
+    fullname = serializers.CharField(write_only=True , required=False , allow_blank=True)
+
     class Meta :
         model = Orders
-        fields = '__all__'
+        fields = ['phone' , 'items' ,'fullname' , 'discount_amount', 'status', 'delivery_time']
     
     def validate_discount_amount(self, value):
         if value < 0:
@@ -106,7 +51,10 @@ class OrderCreateSerializer (serializers.ModelSerializer):
     def create(self, validated_data):
         phone = validated_data.pop("phone")
         items_data = validated_data.pop("items")
+        fullname = validated_data.pop("fullname" , "").strip()
+
         customer , created = Customers.objects.get_or_create(phone=phone)
+
         if created :
             last_customer = Customers.objects.order_by('-code').first()
             if last_customer and last_customer.code :
@@ -115,40 +63,66 @@ class OrderCreateSerializer (serializers.ModelSerializer):
             else:
                 new_code = 100
             customer.code = new_code
+            if fullname :
+                customer.fullname = fullname
             customer.save()
         
-        order = Orders.objects.create(customer_id = customer , **validated_data)
+        else :
+            customer.update_name(fullname)
+        
+        total_amount = sum([
+            i['quantity'] * (i['service'].base_price + i['cloth'].price_modifier)
+            for i in items_data
+        ])
+
+
+        final_amount = total_amount - validated_data.get('discount_amount', 0) 
+        order = Orders.objects.create(
+            customer=customer ,
+            total_amount=total_amount ,
+            final_amount=final_amount ,
+            **validated_data
+            )
 
         for item in items_data :
-            OrderItems.objects.create(order_id = order , **item)
+            service = item['service']
+            cloth = item['cloth']
+            quantity =item['quantity']
+
+            OrderItems.objects.create(
+                order=order ,
+                service=service ,
+                cloth=cloth ,
+                quantity=quantity ,
+                unit_price = service.base_price + cloth.price_modifier
+            )
         
         return order
     
 class OrderUpdateSerializer (serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=Orders.STATUS_CHOICE_FIELDS , required=False)
-    delivery_time = serializers.DateTimeField(required=False)
+    delivery_time = serializers.DateField(required=False)
+    customer_name = serializers.SerializerMethodField()
+    customer_phone = serializers.SerializerMethodField()
 
     class Meta :
         model = Orders
-        fields = ['status', 'delivey_time', 'discount_amount']
+        fields = ['status', 'delivery_time', 'discount_amount' , 'customer_name' , 'customer_phone']
 
+    def get_customer_name(self, obj):
+        return obj.customer.fullname if obj.customer else None
 
-
-
-
-
-
-
-
-
-
+    def get_customer_phone(self, obj):
+        if obj.customer and obj.customer.phone:
+            return str(obj.customer.phone)  # تبدیل به رشته
+        return None
 
 
 class OrderTrackingSerializer (serializers.Serializer):
     phone = serializers.CharField(write_only=True)
 
-    customer_name = serializers.CharField(source='customer_id.fullname' , read_only=True)
-    customer_phone = serializers.CharField(source='customer_id.phone' , read_only=True)
+    customer_name = serializers.CharField(source='customer.fullname' , read_only=True)
+    customer_phone = serializers.CharField(source='customer.phone' , read_only=True)
 
     @staticmethod
     def normalize_phone (phone):
@@ -177,3 +151,33 @@ class OrderTrackingSerializer (serializers.Serializer):
             return {"status" : instance.status }
         except AttributeError :
             return {"status : unknown"}
+        
+
+class OrderListSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.fullname", read_only=True)
+    customer_phone = serializers.CharField(source="customer.phone", read_only=True)
+
+    class Meta:
+        model = Orders
+        fields = ["id", "customer_name", "customer_phone", "status", "final_amount", "delivery_time"]
+
+
+class OrderStatusUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Orders
+        fields = ["status"]
+
+    def validate_status(self, value):
+        allowed = [choice[0] for choice in Orders.STATUS_CHOICE_FIELDS]
+        if value not in allowed:
+            raise serializers.ValidationError(f"Status must be one of {allowed}.")
+        return value
+    
+    def update(self, instance, validated_data):
+        instance.status = validated_data.get('status',instance.status)
+
+        if instance.status == "Delivered" and not instance.delivery_time :
+            instance.delivery_time = timezone.now()
+
+        instance.save()
+        return instance
