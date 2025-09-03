@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <title>مدیریت سفارش خشک‌شویی</title>
@@ -9,6 +9,7 @@ h2 { margin-top: 40px; }
 input, select, button { margin: 5px 0; padding: 5px; }
 .item { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
 .message { color: #333; margin-bottom: 10px; }
+.orderRow { border:1px solid #ccc; padding:8px; margin:5px 0; }
 </style>
 </head>
 <body>
@@ -17,154 +18,195 @@ input, select, button { margin: 5px 0; padding: 5px; }
 
 <div id="message" class="message"></div>
 
+<!-- =================== افزودن سفارش =================== -->
 <h2>ثبت سفارش جدید</h2>
 <form id="createOrderForm">
   شماره تلفن مشتری: <input type="text" name="phone" required><br><br>
+  نام مشتری: <input type="text" name="fullname"><br><br>
 
   <div id="itemsContainer"></div>
-  <button type="button" id="addItemBtn">اضافه کردن آیتم</button><br><br>
+  <button type="button" id="addItemBtn">➕ اضافه کردن آیتم</button><br><br>
   <button type="submit">ثبت سفارش</button>
 </form>
 
 <hr>
 
-<h2>ویرایش سفارش</h2>
-<form id="updateOrderForm">
-  سفارش ID: <input type="number" name="orderId" required><br>
-  وضعیت: 
-  <select name="status">
-    <option value="">انتخاب کنید</option>
-    <option value="Received">دریافت شده</option>
-    <option value="In progress">در حال انجام</option>
-    <option value="Completed">تکمیل شده</option>
-    <option value="Delivered">تحویل شده</option>
-  </select><br>
-  زمان تحویل (YYYY-MM-DD HH:MM:SS): <input type="text" name="delivery"><br>
-  <button type="submit">ویرایش سفارش</button>
-</form>
-
-<hr>
-
-<h2>حذف سفارش</h2>
-<form id="deleteOrderForm">
-  سفارش ID: <input type="number" name="orderId" required>
-  <button type="submit">حذف سفارش</button>
-</form>
+<!-- =================== لیست سفارش‌ها =================== -->
+<h2>آخرین سفارش‌ها</h2>
+<button id="loadRecentBtn">نمایش ۳۰ سفارش اخیر</button>
+<div id="recentOrders"></div>
 
 <script>
-const itemsContainer = document.getElementById("itemsContainer");
-const messageDiv = document.getElementById("message");
+/* =================== Helpers =================== */
+function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken = getCookie('csrftoken');
+const itemsContainer = document.getElementById('itemsContainer');
+const messageDiv = document.getElementById('message');
+const recentOrdersDiv = document.getElementById('recentOrders');
 
-function addItem(cloth='', itemId=0, quantity=1, unitPrice=0){
+let servicesList = [];
+let clothesList  = [];
+let statusChoices = [];
+
+/* =================== Fetch data =================== */
+async function fetchServicesList() {
+  const res = await fetch('/items/allservices/');
+  servicesList = await res.json();
+}
+async function fetchClothesList() {
+  const res = await fetch('/items/allclothes/');
+  clothesList = await res.json();
+}
+async function fetchStatusChoices() {
+  const res = await fetch('/orders/orderstatuschoices/');
+  statusChoices = await res.json();
+}
+
+/* =================== Price helper =================== */
+function getPrice(serviceId, clothId) {
+  const s = servicesList.find(x => x.id == serviceId);
+  const c = clothesList.find(x => x.id == clothId);
+  const base   = s ? s.base_price : 0;
+  const extra  = c ? c.price_modifier : 0;
+  return base + extra;
+}
+
+/* =================== UI for add item =================== */
+function addItem() {
+  if (!servicesList.length || !clothesList.length) return;
   const div = document.createElement('div');
   div.classList.add('item');
+
+  const serviceOptions = servicesList.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+  const clothOptions = clothesList.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+
   div.innerHTML = `
-    خدمت: <input type="number" class="itemId" placeholder="id خدمت" value="${itemId}" required>
-    لباس: <input type="text" class="clothName" placeholder="پتو، کت و شلوار..." value="${cloth}" required>
-    تعداد: <input type="number" class="quantity" value="${quantity}" required>
-    قیمت واحد: <input type="number" class="unitPrice" value="${unitPrice}" required>
-    <button type="button" class="removeBtn">حذف</button>
+    خدمت: <select class="serviceId">${serviceOptions}</select>
+    لباس: <select class="clothId">${clothOptions}</select>
+    تعداد: <input type="number" class="quantity" value="1" min="1">
+    قیمت واحد: <input type="number" class="unitPrice" readonly>
+    <button type="button" class="removeBtn">❌ حذف</button>
   `;
-  div.querySelector('.removeBtn').addEventListener('click', ()=> div.remove());
+
+  const serviceEl = div.querySelector('.serviceId');
+  const clothEl = div.querySelector('.clothId');
+  const unitPriceEl = div.querySelector('.unitPrice');
+
+  function updatePrice(){
+    unitPriceEl.value = getPrice(serviceEl.value, clothEl.value);
+  }
+  updatePrice();
+  serviceEl.addEventListener('change', updatePrice);
+  clothEl.addEventListener('change', updatePrice);
+  div.querySelector('.removeBtn').addEventListener('click', ()=>div.remove());
+
   itemsContainer.appendChild(div);
 }
 
-addItem();
-document.getElementById('addItemBtn').addEventListener('click', ()=> addItem());
-
-document.getElementById('createOrderForm').addEventListener('submit', async (e)=>{
+/* =================== Create Order =================== */
+async function createOrder(e){
   e.preventDefault();
-  messageDiv.textContent = 'در حال ثبت سفارش...';
-
-  const phoneVal = e.target.phone.value.trim();
-  const itemsEls = document.querySelectorAll('#itemsContainer .item');
-  const items = Array.from(itemsEls).map(el=>({
-    item: parseInt(el.querySelector('.itemId').value),
-    cloth_name: el.querySelector('.clothName').value,
-    quantity: parseInt(el.querySelector('.quantity').value),
-    unit_price: parseInt(el.querySelector('.unitPrice').value)
+  const phone = e.target.phone.value.trim();
+  const fullname = e.target.fullname.value.trim();
+  const rows = itemsContainer.querySelectorAll('.item');
+  if(!rows.length){ messageDiv.textContent="حداقل یک آیتم لازم است."; return; }
+  const items = Array.from(rows).map(r=>({
+    service: parseInt(r.querySelector('.serviceId').value),
+    cloth: parseInt(r.querySelector('.clothId').value),
+    quantity: parseInt(r.querySelector('.quantity').value),
+    unit_price: parseInt(r.querySelector('.unitPrice').value)
   }));
 
-  if(!phoneVal || items.length === 0){
-    messageDiv.textContent = 'لطفاً همه فیلدها را پر کنید.';
-    return;
+  const res = await fetch('/orders/ordercreate/', {
+    method:'POST',
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify({phone, fullname, items, discount_amount:0})
+  });
+  const data = await res.json();
+  if(res.ok){
+    messageDiv.textContent = `✅ سفارش با ID ${data.id} ثبت شد.`;
+    e.target.reset();
+    itemsContainer.innerHTML="";
+    addItem();
+  } else {
+    messageDiv.textContent = "❌ خطا: "+JSON.stringify(data);
   }
+}
 
-  try{
-    const response = await fetch('orders/ordercreate/', {
-      method:'POST',
-      credentials: 'same-origin',
-      headers:{'Content-Type':'application/json', 'Accept':'application/json'},
-      body: JSON.stringify({phone: phoneVal, items: items, discount_amount:0})
-    });
-    const data = await response.json();
-    if(response.ok){
-      messageDiv.textContent = `سفارش ثبت شد! ID: ${data.id}`;
-      e.target.reset();
-      itemsContainer.innerHTML = '';
-      addItem();
-    } else {
-      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
-    }
-  }catch(err){
-    console.error(err);
-    messageDiv.textContent = 'خطا در اتصال به سرور';
-  }
-});
+/* =================== Recent Orders =================== */
+async function fetchRecentOrders(){
+  const res = await fetch('/orders/orderrecent/');
+  const data = await res.json();
+  recentOrdersDiv.innerHTML = "";
+  data.forEach(order=>{
+    const div = document.createElement('div');
+    div.classList.add('orderRow');
+    div.innerHTML = `
+      <b>ID:</b> ${order.id} | 
+      <b>مشتری:</b> ${order.customer_name} | 
+      <b>تلفن:</b> ${order.customer_phone} | 
+      <b>وضعیت:</b> ${order.status} | 
+      <b>مبلغ:</b> ${order.final_amount} | 
+      <b>تحویل:</b> ${order.delivery_time || '-'} 
+      <br>
+      <button onclick="editOrder(${order.id})">✏️ ویرایش</button>
+      <button onclick="deleteOrder(${order.id}, '${order.customer_name}')">🗑️ حذف</button>
+      <select onchange="changeStatus(${order.id}, this.value)">
+        <option value="">تغییر وضعیت...</option>
+        ${statusChoices.map(s=>`<option value="${s.value}">${s.label}</option>`).join('')}
+      </select>
+    `;
+    recentOrdersDiv.appendChild(div);
+  });
+}
 
-document.getElementById('updateOrderForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  messageDiv.textContent = 'در حال بروزرسانی سفارش...';
+/* =================== Delete =================== */
+async function deleteOrder(id, customer){
+  if(!confirm(`آیا مطمئنید سفارش ${id} مربوط به ${customer} حذف شود؟`)) return;
+  const res = await fetch(`/orders/orderdelete/${id}/`, {method:'DELETE', headers:{'X-CSRFToken':csrftoken}});
+  if(res.ok){ messageDiv.textContent="🗑️ سفارش حذف شد."; fetchRecentOrders(); }
+  else messageDiv.textContent="❌ خطا در حذف";
+}
 
-  const id = e.target.orderId.value.trim();
-  const payload = {};
-  if(e.target.status.value) payload.status = e.target.status.value;
-  if(e.target.delivery.value) payload.delivey_time = e.target.delivery.value;
+/* =================== Change Status =================== */
+async function changeStatus(id, newStatus){
+  if(!newStatus) return;
+  const res = await fetch(`/orders/orderstatusupdate/${id}/`, {
+    method:'PATCH',
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify({status:newStatus})
+  });
+  if(res.ok){ messageDiv.textContent="🔄 وضعیت سفارش تغییر کرد."; fetchRecentOrders(); }
+  else messageDiv.textContent="❌ خطا در تغییر وضعیت";
+}
 
-  try{
-    const response = await fetch(`orders/orderupdate/${id}/`, {
-      method:'PATCH',
-      credentials:'same-origin',
-      headers:{'Content-Type':'application/json','Accept':'application/json'},
-      body: JSON.stringify(payload)
-    });
-    const data = await response.json();
-    if(response.ok){
-      messageDiv.textContent = 'سفارش بروزرسانی شد!';
-      e.target.reset();
-    } else {
-      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
-    }
-  }catch(err){
-    console.error(err);
-    messageDiv.textContent = 'خطا در اتصال به سرور';
-  }
-});
+/* =================== Edit (redirect) =================== */
+function editOrder(id){
+  window.location.href = `/orders/editpage/${id}/`; // باید این صفحه جداگانه بسازی
+}
 
-document.getElementById('deleteOrderForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  messageDiv.textContent = 'در حال حذف سفارش...';
-
-  const id = e.target.orderId.value.trim();
-  try{
-    const response = await fetch(`/orders/orderdelete/${id}/`,{
-      method:'DELETE',
-      credentials:'same-origin',
-      headers:{'Accept':'application/json'}
-    });
-    if(response.ok){
-      messageDiv.textContent = 'سفارش حذف شد!';
-      e.target.reset();
-    } else {
-      const data = await response.json();
-      messageDiv.textContent = 'خطا: '+JSON.stringify(data);
-    }
-  }catch(err){
-    console.error(err);
-    messageDiv.textContent = 'خطا در اتصال به سرور';
-  }
-});
+/* =================== Init =================== */
+async function init(){
+  await Promise.all([fetchServicesList(), fetchClothesList(), fetchStatusChoices()]);
+  addItem();
+  document.getElementById('createOrderForm').addEventListener('submit', createOrder);
+  document.getElementById('addItemBtn').addEventListener('click', ()=>addItem());
+  document.getElementById('loadRecentBtn').addEventListener('click', fetchRecentOrders);
+}
+document.addEventListener('DOMContentLoaded', init);
 </script>
-
 </body>
 </html>

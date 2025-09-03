@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>ویرایش سفارش</title>
+<style>
+body { font-family: sans-serif; margin: 20px; }
+h2 { margin-top: 30px; }
+input, select, button { margin: 5px 0; padding: 5px; }
+.item { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
+.message { margin: 10px 0; color: #333; }
+</style>
+</head>
+<body>
+
+<h1>ویرایش سفارش</h1>
+<div id="message" class="message"></div>
+
+<form id="editOrderForm">
+  <label>شماره تلفن مشتری:</label>
+  <input type="text" name="phone" required><br>
+  <label>نام مشتری:</label>
+  <input type="text" name="fullname"><br>
+
+  <label>وضعیت:</label>
+  <select name="status" id="statusSelect"></select><br>
+
+  <label>زمان تحویل:</label>
+  <input type="date" name="delivery_time"><br>
+
+  <h2>آیتم‌ها</h2>
+  <div id="itemsContainer"></div>
+  <button type="button" id="addItemBtn">➕ افزودن آیتم</button><br><br>
+
+  <button type="submit">💾 ذخیره تغییرات</button>
+</form>
+
+<script>
+/* Helpers */
+function getCookie(name){
+  let cookieValue=null;
+  if(document.cookie && document.cookie!==''){
+    for(let cookie of document.cookie.split(';')){
+      cookie=cookie.trim();
+      if(cookie.startsWith(name+'=')){
+        cookieValue=decodeURIComponent(cookie.substring(name.length+1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+const csrftoken=getCookie('csrftoken');
+
+const messageDiv=document.getElementById('message');
+const itemsContainer=document.getElementById('itemsContainer');
+const statusSelect=document.getElementById('statusSelect');
+
+let servicesList=[], clothesList=[], statusChoices=[], orderId=null;
+
+/* گرفتن id از URL */
+function getOrderIdFromUrl(){
+  const parts=window.location.pathname.split('/');
+  return parts[parts.length-2]; // فرض: /orders/editpage/12/
+}
+
+/* Fetch API */
+async function fetchServices(){ const r=await fetch('/items/allservices/'); servicesList=await r.json(); }
+async function fetchClothes(){ const r=await fetch('/items/allclothes/'); clothesList=await r.json(); }
+async function fetchStatusChoices(){ const r=await fetch('/orders/orderstatuschoices/'); statusChoices=await r.json(); }
+async function fetchOrderDetails(id){
+  const r=await fetch(`/orders/orderupdate/${id}/`);
+  if(!r.ok) throw new Error("سفارش یافت نشد");
+  return await r.json();
+}
+
+/* UI */
+function buildStatusOptions(current){
+  statusSelect.innerHTML=statusChoices.map(s=>
+    `<option value="${s.value}" ${s.value===current?'selected':''}>${s.label}</option>`
+  ).join('');
+}
+function getPrice(serviceId, clothId){
+  const s=servicesList.find(x=>x.id==serviceId);
+  const c=clothesList.find(x=>x.id==clothId);
+  return (s?s.base_price:0)+(c?c.price_modifier:0);
+}
+function addItem(itemData=null){
+  const div=document.createElement('div');
+  div.classList.add('item');
+
+  const serviceOptions=servicesList.map(s=>
+    `<option value="${s.id}" ${itemData && itemData.service===s.id?'selected':''}>${s.name}</option>`
+  ).join('');
+  const clothOptions=clothesList.map(c=>
+    `<option value="${c.id}" ${itemData && itemData.cloth===c.id?'selected':''}>${c.name}</option>`
+  ).join('');
+
+  div.innerHTML=`
+    خدمت: <select class="serviceId">${serviceOptions}</select>
+    لباس: <select class="clothId">${clothOptions}</select>
+    تعداد: <input type="number" class="quantity" value="${itemData?itemData.quantity:1}" min="1">
+    قیمت واحد: <input type="number" class="unitPrice" readonly>
+    <button type="button" class="removeBtn">❌ حذف</button>
+  `;
+
+  const serviceEl=div.querySelector('.serviceId');
+  const clothEl=div.querySelector('.clothId');
+  const unitPriceEl=div.querySelector('.unitPrice');
+  function updatePrice(){ unitPriceEl.value=getPrice(serviceEl.value, clothEl.value); }
+  updatePrice();
+  serviceEl.addEventListener('change',updatePrice);
+  clothEl.addEventListener('change',updatePrice);
+  div.querySelector('.removeBtn').addEventListener('click',()=>div.remove());
+
+  itemsContainer.appendChild(div);
+}
+
+/* Submit */
+async function saveChanges(e){
+  e.preventDefault();
+  const phone=document.querySelector('[name="phone"]').value;
+  const fullname=document.querySelector('[name="fullname"]').value;
+  const status=document.querySelector('[name="status"]').value;
+  const delivery_time=document.querySelector('[name="delivery_time"]').value;
+
+  const rows=itemsContainer.querySelectorAll('.item');
+  const items=Array.from(rows).map(r=>({
+    service: parseInt(r.querySelector('.serviceId').value),
+    cloth: parseInt(r.querySelector('.clothId').value),
+    quantity: parseInt(r.querySelector('.quantity').value),
+    unit_price: parseInt(r.querySelector('.unitPrice').value)
+  }));
+
+  const payload={ phone, fullname, status, delivery_time, items };
+
+  const res=await fetch(`/orders/orderupdate/${orderId}/`,{
+    method:"PATCH",
+    headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body:JSON.stringify(payload)
+  });
+  const data=await res.json();
+  if(res.ok){ messageDiv.textContent="✅ تغییرات ذخیره شد."; }
+  else { messageDiv.textContent="❌ خطا: "+JSON.stringify(data); }
+}
+
+/* Init */
+async function init(){
+  orderId=getOrderIdFromUrl();
+  try{
+    await Promise.all([fetchServices(), fetchClothes(), fetchStatusChoices()]);
+    const order=await fetchOrderDetails(orderId);
+    document.querySelector('[name="phone"]').value=order.customer_phone;
+    document.querySelector('[name="fullname"]').value=order.customer_name;
+    buildStatusOptions(order.status);
+    document.querySelector('[name="delivery_time"]').value=order.delivery_time || "";
+
+    itemsContainer.innerHTML="";
+    if(order.items && order.items.length){
+      order.items.forEach(it=>addItem(it));
+    } else {
+      addItem();
+    }
+  }catch(err){ messageDiv.textContent="❌ "+err.message; }
+
+  document.getElementById('addItemBtn').addEventListener('click',()=>addItem());
+  document.getElementById('editOrderForm').addEventListener('submit',saveChanges);
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>

@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<title>مدیریت آیتم‌های خشک‌شویی</title>
+<title>مدیریت خدمات و لباس‌ها</title>
 <style>
 body { font-family: sans-serif; margin: 20px; }
 h2 { margin-top: 40px; }
@@ -13,189 +13,180 @@ input, button { margin: 5px 0; padding: 5px; }
 </head>
 <body>
 
-<h1>مدیریت آیتم‌های خشک‌شویی</h1>
-
+<h1>مدیریت خدمات و لباس‌ها</h1>
 <div id="message" class="message"></div>
 
-<!-- فرم اضافه کردن -->
-<h2>اضافه کردن آیتم</h2>
-<form id="addItemForm">
-    نام آیتم: <input type="text" name="name" required><br>
-    توضیحات: <input type="text" name="description"><br>
-    قیمت واحد: <input type="number" name="unit_price" required><br>
-    <button type="submit">اضافه کردن آیتم</button>
+<!-- ================== Services ================== -->
+<h2>مدیریت خدمات</h2>
+<form id="addServiceForm">
+  نام خدمت: <input type="text" name="name" required><br>
+  قیمت پایه: <input type="number" name="base_price" required><br>
+  <button type="submit">➕ افزودن خدمت</button>
 </form>
+
+<form id="editServiceForm">
+  نام فعلی: <input type="text" name="old_name" required><br>
+  نام جدید: <input type="text" name="name"><br>
+  قیمت جدید: <input type="number" name="base_price"><br>
+  <button type="submit">✏️ ویرایش خدمت</button>
+</form>
+
+<form id="deleteServiceForm">
+  نام خدمت برای حذف: <input type="text" name="name" required>
+  <button type="submit">🗑️ حذف خدمت</button>
+</form>
+
+<div id="servicesList"></div>
 
 <hr>
 
-<!-- فرم ویرایش -->
-<h2>ویرایش آیتم</h2>
-<form id="editItemForm">
-    نام آیتم (قدیمی): <input type="text" name="old_name" required><br>
-    نام جدید (اختیاری): <input type="text" name="name"><br>
-    توضیحات جدید: <input type="text" name="description"><br>
-    قیمت واحد جدید: <input type="number" name="unit_price"><br>
-    <button type="submit">ویرایش آیتم</button>
+<!-- ================== Clothes ================== -->
+<h2>مدیریت لباس‌ها</h2>
+<form id="addClothForm">
+  نام لباس: <input type="text" name="name" required><br>
+  ضریب قیمت: <input type="number" name="price_modifier" required><br>
+  <button type="submit">➕ افزودن لباس</button>
 </form>
 
-<hr>
-
-<!-- فرم حذف -->
-<h2>حذف آیتم</h2>
-<form id="deleteItemForm">
-    نام آیتم برای حذف: <input type="text" name="name" required>
-    <button type="submit">حذف آیتم</button>
+<form id="editClothForm">
+  نام فعلی: <input type="text" name="old_name" required><br>
+  نام جدید: <input type="text" name="name"><br>
+  ضریب قیمت جدید: <input type="number" name="price_modifier"><br>
+  <button type="submit">✏️ ویرایش لباس</button>
 </form>
 
-<hr>
+<form id="deleteClothForm">
+  نام لباس برای حذف: <input type="text" name="name" required>
+  <button type="submit">🗑️ حذف لباس</button>
+</form>
 
-<h2>لیست آیتم‌ها</h2>
-<div id="itemsList"></div>
+<div id="clothesList"></div>
 
 <script>
 const messageDiv = document.getElementById("message");
-const itemsList = document.getElementById("itemsList");
+const servicesList = document.getElementById("servicesList");
+const clothesList = document.getElementById("clothesList");
 
-// گرفتن CSRF توکن برای POST/PATCH/DELETE
+// گرفتن CSRF
 function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
     }
-    return cookieValue;
+  }
+  return cookieValue;
 }
 const csrftoken = getCookie('csrftoken');
 
-// 📌 گرفتن لیست آیتم‌ها
-async function fetchItems(){
+// ================== Services ==================
+async function fetchServices(){
   try {
-    const res = await fetch('/items/all/');
+    const res = await fetch('/items/allservices/');
     const data = await res.json();
-    itemsList.innerHTML = '';
-    data.forEach(item => {
-      const div = document.createElement('div');
-      div.classList.add('itemDiv');
-      div.textContent = `نام: ${item.name} | توضیحات: ${item.description} | قیمت: ${item.unit_price}`;
-      itemsList.appendChild(div);
+    servicesList.innerHTML = "<h3>لیست خدمات:</h3>";
+    data.forEach(s=>{
+      const div = document.createElement("div");
+      div.classList.add("itemDiv");
+      div.textContent = `نام: ${s.name} | قیمت: ${s.base_price}`;
+      servicesList.appendChild(div);
     });
-  } catch(err){
-    console.error(err);
-    messageDiv.textContent = 'خطا در دریافت لیست آیتم‌ها';
-  }
+  } catch(err){ console.error(err); }
 }
 
-// 📌 اضافه کردن آیتم
-document.getElementById('addItemForm').addEventListener('submit', async (e)=>{
+document.getElementById("addServiceForm").addEventListener("submit", async e=>{
   e.preventDefault();
-  messageDiv.textContent = 'در حال اضافه کردن آیتم...';
-
-  const formData = new FormData(e.target);
-  const payload = Object.fromEntries(formData.entries());
-
-  try{
-    const res = await fetch('/items/add/', {
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'X-CSRFToken': csrftoken
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(res.ok){
-      messageDiv.textContent = `✅ آیتم '${data.name}' اضافه شد!`;
-      e.target.reset();
-      fetchItems();
-    } else {
-      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
-    }
-  } catch(err){
-    console.error(err);
-    messageDiv.textContent = '❌ خطا در اتصال به سرور';
-  }
-});
-// 📌 ویرایش آیتم بر اساس name
-document.getElementById('editItemForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  messageDiv.textContent = 'در حال ویرایش آیتم...';
-
-  const formData = new FormData(e.target);
-  const oldName = formData.get('old_name');
-  const payload = Object.fromEntries(formData.entries());
-  delete payload.old_name; // old_name نباید داخل payload بره
-
-  // ⚡ اگر name جدید خالی بود، از payload حذفش کن
-  Object.keys(payload).forEach(key => {
-    if(payload[key] === '' || payload[key] === null){
-      delete payload[key];
-    }
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+  const res = await fetch('/items/servicesadd/', {
+    method:"POST", headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify(payload)
   });
-
-  try{
-    const res = await fetch(`/items/edit/${oldName}/`, {
-      method:'PATCH',
-      headers:{
-        'Content-Type':'application/json',
-        'X-CSRFToken': csrftoken
-      },
-      body: JSON.stringify(payload)
-    });
-    const data = await res.json();
-    if(res.ok){
-      const newName = payload.name || oldName;
-      messageDiv.textContent = `✏️ آیتم '${newName}' ویرایش شد!`;
-      e.target.reset();
-      fetchItems();
-    } else {
-      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
-    }
-  } catch(err){
-    console.error(err);
-    messageDiv.textContent = '❌ خطا در اتصال به سرور';
-  }
+  if(res.ok){ messageDiv.textContent="✅ خدمت اضافه شد"; e.target.reset(); fetchServices(); }
+  else messageDiv.textContent="❌ خطا در افزودن خدمت";
 });
 
-
-// 📌 حذف آیتم بر اساس name
-document.getElementById('deleteItemForm').addEventListener('submit', async (e)=>{
+document.getElementById("editServiceForm").addEventListener("submit", async e=>{
   e.preventDefault();
-  messageDiv.textContent = 'در حال حذف آیتم...';
-
-  const formData = new FormData(e.target);
-  const name = formData.get('name');
-
-  try{
-    const res = await fetch(`/items/delete/${name}/`,{
-      method:'DELETE',
-      headers:{
-        'Accept':'application/json',
-        'X-CSRFToken': csrftoken
-      }
-    });
-    if(res.ok){
-      messageDiv.textContent = `🗑️ آیتم '${name}' حذف شد!`;
-      e.target.reset();
-      fetchItems();
-    } else {
-      const data = await res.json();
-      messageDiv.textContent = '❌ خطا: '+JSON.stringify(data);
-    }
-  } catch(err){
-    console.error(err);
-    messageDiv.textContent = '❌ خطا در اتصال به سرور';
-  }
+  const fd = new FormData(e.target);
+  const oldName = fd.get("old_name");
+  const payload = Object.fromEntries(fd.entries());
+  delete payload.old_name;
+  const res = await fetch(`/items/servicesedit/${oldName}/`, {
+    method:"PATCH", headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify(payload)
+  });
+  if(res.ok){ messageDiv.textContent="✏️ خدمت ویرایش شد"; e.target.reset(); fetchServices(); }
+  else messageDiv.textContent="❌ خطا در ویرایش خدمت";
 });
 
-// 📌 بارگذاری اولیه لیست
-fetchItems();
-</script>
+document.getElementById("deleteServiceForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const name = new FormData(e.target).get("name");
+  const res = await fetch(`/items/servicesdelete/${name}/`, {
+    method:"DELETE", headers:{'X-CSRFToken':csrftoken}
+  });
+  if(res.ok){ messageDiv.textContent="🗑️ خدمت حذف شد"; e.target.reset(); fetchServices(); }
+  else messageDiv.textContent="❌ خطا در حذف خدمت";
+});
 
+// ================== Clothes ==================
+async function fetchClothes(){
+  try {
+    const res = await fetch('/items/allclothes/');
+    const data = await res.json();
+    clothesList.innerHTML = "<h3>لیست لباس‌ها:</h3>";
+    data.forEach(c=>{
+      const div = document.createElement("div");
+      div.classList.add("itemDiv");
+      div.textContent = `نام: ${c.name} | ضریب قیمت: ${c.price_modifier}`;
+      clothesList.appendChild(div);
+    });
+  } catch(err){ console.error(err); }
+}
+
+document.getElementById("addClothForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+  const res = await fetch('/items/clothesadd/', {
+    method:"POST", headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify(payload)
+  });
+  if(res.ok){ messageDiv.textContent="✅ لباس اضافه شد"; e.target.reset(); fetchClothes(); }
+  else messageDiv.textContent="❌ خطا در افزودن لباس";
+});
+
+document.getElementById("editClothForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const fd = new FormData(e.target);
+  const oldName = fd.get("old_name");
+  const payload = Object.fromEntries(fd.entries());
+  delete payload.old_name;
+  const res = await fetch(`/items/clothesedit/${oldName}/`, {
+    method:"PATCH", headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
+    body: JSON.stringify(payload)
+  });
+  if(res.ok){ messageDiv.textContent="✏️ لباس ویرایش شد"; e.target.reset(); fetchClothes(); }
+  else messageDiv.textContent="❌ خطا در ویرایش لباس";
+});
+
+document.getElementById("deleteClothForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const name = new FormData(e.target).get("name");
+  const res = await fetch(`/items/clothesdelete/${name}/`, {
+    method:"DELETE", headers:{'X-CSRFToken':csrftoken}
+  });
+  if(res.ok){ messageDiv.textContent="🗑️ لباس حذف شد"; e.target.reset(); fetchClothes(); }
+  else messageDiv.textContent="❌ خطا در حذف لباس";
+});
+
+// ================== Init ==================
+fetchServices();
+fetchClothes();
+</script>
 </body>
 </html>

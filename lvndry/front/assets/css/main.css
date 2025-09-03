@@ -1442,6 +1442,9 @@ section,
 
 .book-a-table .reservation-form-bg {
   background: color-mix(in srgb, var(--default-color), transparent 97%);
+  width: 95%;
+  min-height: auto;
+  padding: 20px;
 }
 
 .book-a-table .my-comment-form {

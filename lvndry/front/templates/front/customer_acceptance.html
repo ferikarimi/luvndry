@@ -1,0 +1,22 @@
+<!doctype html>
+<html>
+  <body>
+    <label>phone: <input id="p" value="+989300000000"></label><br>
+    <label>fullname: <input id="f" value="Ali Test"></label><br>
+    <button id="send">Send</button>
+    <script>
+      document.getElementById('send').addEventListener('click', async ()=>{
+        const payload = { phone: document.getElementById('p').value, fullname: document.getElementById('f').value };
+        console.log('Standalone send payload:', payload);
+        const res = await fetch('/orders/ordercreate/', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {'Content-Type':'application/json','X-CSRFToken': (document.cookie.match(/csrftoken=([^;]+)/)||[])[1]},
+          body: JSON.stringify(payload)
+        });
+        console.log('status', res.status);
+        console.log(await res.text());
+      });
+    </script>
+  </body>
+</html>
