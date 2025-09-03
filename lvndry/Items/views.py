@@ -1,49 +1,104 @@
 from django.shortcuts import render
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .models import Items
-from .serializers import AllItemsSerializer , ItemAddSerializer , ItemEditSerializer 
+from .models import Clothes , Services
+from .serializers import AllClothesSerializer , AllServicesSerializer , ServicesAddSerializer , ServicesEditSerializer , ClothesAddSerializer , ClothesEditSerializer 
 
 
 
-
-class AllItems (APIView):
+class AllClothes (APIView):
     def get (self , request):
-        items = Items.objects.all().order_by('-name')
-        serializer = AllItemsSerializer (items , many=True)
+        clothes = Clothes.objects.all().order_by('-name')
+        serializer = AllClothesSerializer (clothes , many=True)
+        return Response (serializer.data , status=200)
+    
+
+class AllServices (APIView):
+    def get (self , request):
+        services = Services.objects.all().order_by('-name')
+        serializer = AllServicesSerializer (services , many=True)
         return Response (serializer.data , status=200)
 
 
-class ItemAdd (APIView):
-    def post(self,request):
-        serializer = ItemAddSerializer(data=request.data)
+class ServicesAdd(APIView):
+    def post(self, request):
+        serializer = ServicesAddSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response (serializer.data , status=201)
-        return Response (serializer.errors , status=400)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=40)
 
 
-class ItemEdit (APIView):
+class ServicesEdit(APIView):
+    def patch(self, request, name):
+        try:
+            item = Services.objects.get(name=name)
+        except Services.DoesNotExist:
+            return Response(
+                {"error": f"Service '{name}' does not exist!"},
+                status=404
+            )
 
-    def patch (self , request , name):
-        try :
-            item = Items.objects.get(name=name)
-        except Items.DoesNotExist :
-            return Response(f"ERROR : item '{name}' does not exists!")
-        
-        serializer = ItemEditSerializer(item , data=request.data , partial=True)
+        serializer = ServicesEditSerializer(item, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data , status=200)
-        return Response(serializer.errors , status=400)
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
 
 
-class ItemDelete (APIView):
-
-    def delete (self , request , name):
-        try :
-            item = Items.objects.get(name=name)
+class ServicesDelete(APIView):
+    def delete(self, request, name):
+        try:
+            item = Services.objects.get(name=name)
             item.delete()
-            return Response (f"MESSAGE : item '{item.name}' deleted successfully." , status=200)
-        except Items.DoesNotExist :
-            return Response (f"ERROR :  item '{name}' does not exists!" , status=404)
+            return Response(
+                {"message": f"Service '{name}' deleted successfully."},
+                status=200
+            )
+        except Services.DoesNotExist:
+            return Response(
+                {"error": f"Service '{name}' does not exist!"},
+                status=404
+            )
+
+
+class ClothesAdd(APIView):
+    def post(self, request):
+        serializer = ClothesAddSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+
+
+class ClothesEdit(APIView):
+    def patch(self, request, name):
+        try:
+            item = Clothes.objects.get(name=name)
+        except Clothes.DoesNotExist:
+            return Response(
+                {"error": f"Cloth '{name}' does not exist!"},
+                status=404
+            )
+
+        serializer = ClothesEditSerializer(item, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+        return Response(serializer.errors, status=400)
+
+
+class ClothesDelete(APIView):
+    def delete(self, request, name):
+        try:
+            item = Clothes.objects.get(name=name)
+            item.delete()
+            return Response(
+                {"message": f"Cloth '{name}' deleted successfully."},
+                status=200
+            )
+        except Clothes.DoesNotExist:
+            return Response(
+                {"error": f"Cloth '{name}' does not exist!"},
+                status=404
+            )
