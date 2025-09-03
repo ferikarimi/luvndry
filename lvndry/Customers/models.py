@@ -11,9 +11,15 @@ class Customers (models.Model):
     phone = PhoneNumberField(unique=True)
     address = models.CharField(max_length=255 , null=True , blank=True)
     code = models.PositiveIntegerField(unique=True , null=True , blank=True)
+    previous_debt = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.fullname}"
+    
+    def update_name(self , fullname):
+        if fullname and (not self.fullname or self.fullname != fullname):
+            self.fullname = fullname
+            self.save()
 
 
 
