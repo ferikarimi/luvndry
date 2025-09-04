@@ -103,14 +103,19 @@ function addItem() {
 
   const serviceEl = div.querySelector('.serviceId');
   const clothEl = div.querySelector('.clothId');
+  const quantityEl = div.querySelector('.quantity');
   const unitPriceEl = div.querySelector('.unitPrice');
 
   function updatePrice(){
-    unitPriceEl.value = getPrice(serviceEl.value, clothEl.value);
+    const quantity = parseInt(quantityEl.value) || 1;
+    const unit = getPrice(serviceEl.value, clothEl.value);
+    unitPriceEl.value = unit * quantity;
   }
   updatePrice();
+
   serviceEl.addEventListener('change', updatePrice);
   clothEl.addEventListener('change', updatePrice);
+  quantityEl.addEventListener('input', updatePrice);
   div.querySelector('.removeBtn').addEventListener('click', ()=>div.remove());
 
   itemsContainer.appendChild(div);

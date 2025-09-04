@@ -3,19 +3,58 @@ from .models import Orders , OrderItems
 from Items.models import Clothes , Services
 from Customers.models import Customers
 from django.utils import timezone
+from django.db.models import Sum
+
+
+
+
+
+
 
 
 
 class OrderItemSerializer (serializers.ModelSerializer):
 
-    service = serializers.PrimaryKeyRelatedField(queryset=Services.objects.all())
-    cloth = serializers.PrimaryKeyRelatedField(queryset=Clothes.objects.all())
-    quantity = serializers.IntegerField()
+    service_name = serializers.PrimaryKeyRelatedField(source='service.name', read_only=True)
+    cloth_name = serializers.PrimaryKeyRelatedField(source='cloth.name', read_only=True)
 
     class Meta :
         model = OrderItems
-        fields = ["service", "cloth", "quantity", "unit_price"]
-        read_only_fields = ["unit_price"]
+        fields = ["id","service","service_name", "cloth","cloth_name", "quantity", "unit_price","total_price"]
+        read_only_fields = ["id","unit_price","total_price"]
+
+
+
+
+
+
+
+
+
+
+
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source='customer.fullname', read_only=True)
+    customer_phone = serializers.CharField(source='customer.phone', read_only=True)
+    items = OrderItemSerializer(many=True, source='order_items', read_only=True)
+
+    class Meta:
+        model = Orders
+        fields = ["id", "customer_name", "customer_phone",
+                  "status", "order_time", "delivery_time",
+                  "discount_amount", "total_amount", "final_amount",
+                  "items"]
+
+
+
+
+
+
+
+
+
 
 
 class OrderCreateSerializer (serializers.ModelSerializer):
@@ -98,24 +137,38 @@ class OrderCreateSerializer (serializers.ModelSerializer):
             )
         
         return order
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
 class OrderUpdateSerializer (serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=Orders.STATUS_CHOICE_FIELDS , required=False)
     delivery_time = serializers.DateField(required=False)
-    customer_name = serializers.SerializerMethodField()
-    customer_phone = serializers.SerializerMethodField()
 
     class Meta :
         model = Orders
-        fields = ['status', 'delivery_time', 'discount_amount' , 'customer_name' , 'customer_phone']
+        fields = ['status' , 'delivery_time', 'discount_amount']
 
-    def get_customer_name(self, obj):
-        return obj.customer.fullname if obj.customer else None
 
-    def get_customer_phone(self, obj):
-        if obj.customer and obj.customer.phone:
-            return str(obj.customer.phone)  # تبدیل به رشته
-        return None
+
+
+
+
+
+
+
+
+
+
 
 
 class OrderTrackingSerializer (serializers.Serializer):
@@ -153,6 +206,12 @@ class OrderTrackingSerializer (serializers.Serializer):
             return {"status : unknown"}
         
 
+
+
+
+
+
+
 class OrderListSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.fullname", read_only=True)
     customer_phone = serializers.CharField(source="customer.phone", read_only=True)
@@ -160,6 +219,14 @@ class OrderListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Orders
         fields = ["id", "customer_name", "customer_phone", "status", "final_amount", "delivery_time"]
+
+
+
+
+
+
+
+
 
 
 class OrderStatusUpdateSerializer(serializers.ModelSerializer):

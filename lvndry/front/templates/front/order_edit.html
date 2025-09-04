@@ -18,25 +18,34 @@ input, select, button { margin: 5px 0; padding: 5px; }
 
 <form id="editOrderForm">
   <label>شماره تلفن مشتری:</label>
-  <input type="text" name="phone" required><br>
+  <input type="text" name="phone" readonly><br>
   <label>نام مشتری:</label>
-  <input type="text" name="fullname"><br>
+  <input type="text" name="fullname" readonly><br>
 
   <label>وضعیت:</label>
   <select name="status" id="statusSelect"></select><br>
 
-  <label>زمان تحویل:</label>
+  <label>تاریخ ثبت سفارش:</label>
+  <input type="text" name="order_time" readonly><br>
+
+  <label>تاریخ تحویل:</label>
   <input type="date" name="delivery_time"><br>
 
   <h2>آیتم‌ها</h2>
   <div id="itemsContainer"></div>
   <button type="button" id="addItemBtn">➕ افزودن آیتم</button><br><br>
 
-  <button type="submit">💾 ذخیره تغییرات</button>
+  <button type="submit">💾 ذخیره تغییرات سفارش</button>
 </form>
 
 <script>
-/* Helpers */
+// ---------------- Helper ها -----------------
+function toYMD(str){
+  if(!str) return "";
+  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
+}
+
 function getCookie(name){
   let cookieValue=null;
   if(document.cookie && document.cookie!==''){
@@ -50,21 +59,22 @@ function getCookie(name){
   }
   return cookieValue;
 }
-const csrftoken=getCookie('csrftoken');
 
+const csrftoken=getCookie('csrftoken');
 const messageDiv=document.getElementById('message');
 const itemsContainer=document.getElementById('itemsContainer');
 const statusSelect=document.getElementById('statusSelect');
 
+let order = null;
 let servicesList=[], clothesList=[], statusChoices=[], orderId=null;
 
-/* گرفتن id از URL */
+// ---------------- گرفتن id سفارش از URL -----------------
 function getOrderIdFromUrl(){
   const parts=window.location.pathname.split('/');
   return parts[parts.length-2]; // فرض: /orders/editpage/12/
 }
 
-/* Fetch API */
+// ---------------- Fetch API -----------------
 async function fetchServices(){ const r=await fetch('/items/allservices/'); servicesList=await r.json(); }
 async function fetchClothes(){ const r=await fetch('/items/allclothes/'); clothesList=await r.json(); }
 async function fetchStatusChoices(){ const r=await fetch('/orders/orderstatuschoices/'); statusChoices=await r.json(); }
@@ -74,20 +84,26 @@ async function fetchOrderDetails(id){
   return await r.json();
 }
 
-/* UI */
+// ---------------- UI Helper ها -----------------
 function buildStatusOptions(current){
   statusSelect.innerHTML=statusChoices.map(s=>
     `<option value="${s.value}" ${s.value===current?'selected':''}>${s.label}</option>`
   ).join('');
 }
+
 function getPrice(serviceId, clothId){
   const s=servicesList.find(x=>x.id==serviceId);
   const c=clothesList.find(x=>x.id==clothId);
   return (s?s.base_price:0)+(c?c.price_modifier:0);
 }
+
+// ---------------- ساخت آیتم -----------------
 function addItem(itemData=null){
   const div=document.createElement('div');
   div.classList.add('item');
+  if(itemData && itemData.id){
+    div.dataset.itemId = itemData.id;   // ذخیره id آیتم موجود
+  }
 
   const serviceOptions=servicesList.map(s=>
     `<option value="${s.id}" ${itemData && itemData.service===s.id?'selected':''}>${s.name}</option>`
@@ -101,71 +117,171 @@ function addItem(itemData=null){
     لباس: <select class="clothId">${clothOptions}</select>
     تعداد: <input type="number" class="quantity" value="${itemData?itemData.quantity:1}" min="1">
     قیمت واحد: <input type="number" class="unitPrice" readonly>
+    قیمت کل: <input type="number" class="totalPrice" readonly>
     <button type="button" class="removeBtn">❌ حذف</button>
+    <button type="button" class="saveItemBtn">💾 ذخیره آیتم</button>
   `;
 
-  const serviceEl=div.querySelector('.serviceId');
-  const clothEl=div.querySelector('.clothId');
-  const unitPriceEl=div.querySelector('.unitPrice');
-  function updatePrice(){ unitPriceEl.value=getPrice(serviceEl.value, clothEl.value); }
-  updatePrice();
-  serviceEl.addEventListener('change',updatePrice);
-  clothEl.addEventListener('change',updatePrice);
-  div.querySelector('.removeBtn').addEventListener('click',()=>div.remove());
+  const serviceEl = div.querySelector('.serviceId');
+  const clothEl = div.querySelector('.clothId');
+  const quantityEl = div.querySelector('.quantity');
+  const unitPriceEl = div.querySelector('.unitPrice');
+  const totalPriceEl = div.querySelector('.totalPrice');
 
+  function updatePrice(){
+    const unitPrice = getPrice(serviceEl.value, clothEl.value);
+    const quantity = parseInt(quantityEl.value) || 1;
+    unitPriceEl.value = unitPrice;
+    totalPriceEl.value = unitPrice * quantity;
+  }
+
+  serviceEl.addEventListener('change', updatePrice);
+  clothEl.addEventListener('change', updatePrice);
+  quantityEl.addEventListener('input', updatePrice);
+
+  updatePrice(); // مقداردهی اولیه
   itemsContainer.appendChild(div);
+  return div;
 }
 
-/* Submit */
+// حذف آیتم
+async function deleteItem(div){
+  const itemId = div.dataset.itemId;
+  if(itemId){
+    const res = await fetch(`/orders/orderitemupdatedelete/${itemId}/`, {
+      method: "DELETE",
+      headers: { 'X-CSRFToken': csrftoken }
+    });
+    if(res.ok){
+      div.remove();
+      messageDiv.textContent = "✅ آیتم حذف شد.";
+    }else{
+      messageDiv.textContent = "❌ خطا در حذف آیتم.";
+    }
+  }else{
+    div.remove(); // آیتم جدیدی بود که هنوز ذخیره نشده
+  }
+}
+
+// ذخیره آیتم جدید
+async function saveNewItem(div){
+  const service = parseInt(div.querySelector('.serviceId').value);
+  const cloth = parseInt(div.querySelector('.clothId').value);
+  const quantity = parseInt(div.querySelector('.quantity').value);
+
+  const payload = { service, cloth, quantity };
+
+  const res = await fetch(`/orders/orderitemcreate/${orderId}/`, {
+    method: "POST",
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  if(res.ok){
+    div.dataset.itemId = data.id;  // آیتم جدید حالا id داره
+    messageDiv.textContent = "✅ آیتم جدید اضافه شد.";
+  }else{
+    messageDiv.textContent = "❌ خطا در افزودن آیتم.";
+  }
+}
+
+// آپدیت آیتم موجود
+async function updateItem(div){
+  const itemId = div.dataset.itemId;
+  if(!itemId){
+    return saveNewItem(div); // اگر جدید بود → POST
+  }
+
+  const service = parseInt(div.querySelector('.serviceId').value);
+  const cloth = parseInt(div.querySelector('.clothId').value);
+  const quantity = parseInt(div.querySelector('.quantity').value);
+
+  const payload = { service, cloth, quantity };
+
+  const res = await fetch(`/orders/orderitemupdatedelete/${itemId}/`, {
+    method: "PATCH",
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+    body: JSON.stringify(payload)
+  });
+
+  if(res.ok){
+    messageDiv.textContent = "✅ آیتم ویرایش شد.";
+  }else{
+    messageDiv.textContent = "❌ خطا در ویرایش آیتم.";
+  }
+}
+
+// ---------------- ذخیره تغییرات سفارش -----------------
 async function saveChanges(e){
   e.preventDefault();
-  const phone=document.querySelector('[name="phone"]').value;
-  const fullname=document.querySelector('[name="fullname"]').value;
-  const status=document.querySelector('[name="status"]').value;
-  const delivery_time=document.querySelector('[name="delivery_time"]').value;
+  if (!order) return;
 
-  const rows=itemsContainer.querySelectorAll('.item');
-  const items=Array.from(rows).map(r=>({
-    service: parseInt(r.querySelector('.serviceId').value),
-    cloth: parseInt(r.querySelector('.clothId').value),
-    quantity: parseInt(r.querySelector('.quantity').value),
-    unit_price: parseInt(r.querySelector('.unitPrice').value)
-  }));
+  const status = document.querySelector('[name="status"]').value;
+  const deliveryInput = document.querySelector('[name="delivery_time"]').value.trim();
 
-  const payload={ phone, fullname, status, delivery_time, items };
+  const payload = {
+    status,
+    ...(deliveryInput ? { delivery_time: deliveryInput } : {})
+  };
 
-  const res=await fetch(`/orders/orderupdate/${orderId}/`,{
-    method:"PATCH",
-    headers:{'Content-Type':'application/json','X-CSRFToken':csrftoken},
-    body:JSON.stringify(payload)
+  const res = await fetch(`/orders/orderupdate/${orderId}/`, {
+    method: "PATCH",
+    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+    body: JSON.stringify(payload)
   });
-  const data=await res.json();
-  if(res.ok){ messageDiv.textContent="✅ تغییرات ذخیره شد."; }
-  else { messageDiv.textContent="❌ خطا: "+JSON.stringify(data); }
+
+  if(res.ok){
+    messageDiv.textContent = "✅ تغییرات سفارش ذخیره شد.";
+  }else{
+    messageDiv.textContent = "❌ خطا در ذخیره سفارش.";
+  }
 }
 
-/* Init */
+// ---------------- Init -----------------
 async function init(){
   orderId=getOrderIdFromUrl();
   try{
     await Promise.all([fetchServices(), fetchClothes(), fetchStatusChoices()]);
-    const order=await fetchOrderDetails(orderId);
+    order=await fetchOrderDetails(orderId);
+
     document.querySelector('[name="phone"]').value=order.customer_phone;
     document.querySelector('[name="fullname"]').value=order.customer_name;
     buildStatusOptions(order.status);
-    document.querySelector('[name="delivery_time"]').value=order.delivery_time || "";
 
+    // تاریخ ثبت سفارش
+    document.querySelector('[name="order_time"]').value = toYMD(order.order_time);
+
+    // تاریخ تحویل
+    if(order.delivery_time){
+      document.querySelector('[name="delivery_time"]').value = toYMD(order.delivery_time);
+    }
+
+    // آیتم‌ها
     itemsContainer.innerHTML="";
     if(order.items && order.items.length){
-      order.items.forEach(it=>addItem(it));
+      order.items.forEach(it=>{
+        const div = addItem(it);
+        // اتصال رویدادها
+        div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
+        div.querySelector('.saveItemBtn').addEventListener('click', ()=>updateItem(div));
+      });
     } else {
-      addItem();
+      const div = addItem();
+      div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
+      div.querySelector('.saveItemBtn').addEventListener('click', ()=>saveNewItem(div));
     }
+
   }catch(err){ messageDiv.textContent="❌ "+err.message; }
 
-  document.getElementById('addItemBtn').addEventListener('click',()=>addItem());
+  document.getElementById('addItemBtn').addEventListener('click',()=>{
+    const div = addItem();
+    div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
+    div.querySelector('.saveItemBtn').addEventListener('click', ()=>saveNewItem(div));
+  });
   document.getElementById('editOrderForm').addEventListener('submit',saveChanges);
 }
+
 document.addEventListener('DOMContentLoaded',init);
 </script>
 </body>

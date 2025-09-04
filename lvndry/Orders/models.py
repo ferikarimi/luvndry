@@ -35,7 +35,9 @@ class OrderItems (models.Model):
     cloth = models.ForeignKey(Clothes , on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField(default=1)
     unit_price = models.IntegerField()
+    total_price = models.IntegerField()
 
     def save(self, *args , **kwargs) :
         self.unit_price = self.service.base_price + self.cloth.price_modifier
+        self.total_price = self.unit_price * self.quantity
         super().save(*args , **kwargs)
