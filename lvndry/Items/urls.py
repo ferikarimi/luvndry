@@ -1,18 +1,21 @@
 from django.urls import path
-from .views import AllServices , AllClothes, ServicesAdd , ServicesEdit , ServicesDelete , ClothesAdd , ClothesEdit , ClothesDelete
-
-
+from .views import (
+    ServicesManagment , ClothesManagment , ExtraServicesManagment , DiscountManagment , DeletedItems , OrderPageData 
+)
 urlpatterns = [
-    path('allservices/', AllServices.as_view() , name='AllItems'),
-    path('allclothes/', AllClothes.as_view() , name='AllItems'),
+    path('services/', ServicesManagment.as_view()),
+    path('services/<int:id>/', ServicesManagment.as_view()),
+
+    path('clothes/', ClothesManagment.as_view()),          
+    path('clothes/<int:id>/', ClothesManagment.as_view()), 
+
+    path('extraservices/', ExtraServicesManagment.as_view()),         
+    path('extraservices/<int:id>/', ExtraServicesManagment.as_view()),  
+
+    path('discounts/', DiscountManagment.as_view()),          
+    path('discounts/<int:id>/', DiscountManagment.as_view()), 
 
 
-    path('servicesadd/', ServicesAdd.as_view() , name='ItemAdd'),
-    path('servicesedit/<str:name>/', ServicesEdit.as_view() , name='ItemEdit'),
-    path('servicesdelete/<str:name>/', ServicesDelete.as_view() , name='ItemDelete'),
-
-    path('clothesadd/', ClothesAdd.as_view() , name='ItemAdd'),
-    path('clothesedit/<str:name>/', ClothesEdit.as_view() , name='ItemEdit'),
-    path('clothesdelete/<str:name>/', ClothesDelete.as_view() , name='ItemDelete'),
-
+    path('deleteditems/', DeletedItems.as_view() , name='deleteditems'),
+    path('orderpagedata/', OrderPageData.as_view() , name='orderpagedata'),
 ]
