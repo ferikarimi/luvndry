@@ -11,24 +11,22 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
 from pathlib import Path
+import os
+import logging
+from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
+load_dotenv()
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+SECRET_KEY = os.getenv("SECRET_KEY")
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-bf273o$7+g6_x6sjl=%64zywv=44=_1@7sp%w1a1byls))bc6)'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
 
 
-# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -38,12 +36,15 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-
     'rest_framework',
-    'phonenumber_field',
+    'ckeditor',
+    'ckeditor_uploader',
     'Customers',
     'Items',
-    'Orders' ,
+    'Orders',
+    'conf',
+    'CMS',
+
 ]
 
 MIDDLEWARE = [
@@ -54,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
 ]
 
 ROOT_URLCONF = 'lvndry.urls'
@@ -76,19 +78,42 @@ TEMPLATES = [
 WSGI_APPLICATION = 'lvndry.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+
+import os
+
+import pymysql
+pymysql.install_as_MySQLdb()
+
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
     }
 }
 
 
-# Password validation
-# https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
+# DATABASES = {
+#     'default': {
+#         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
+#         'NAME': os.getenv('DB_NAME', 'mydb'),
+#         'USER': os.getenv('DB_USER', 'myuser'),
+#         'PASSWORD': os.getenv('DB_PASSWORD', 'mypassword'),
+#         'HOST': os.getenv('DB_HOST', 'localhost'),
+#         'PORT': os.getenv('DB_PORT', '3306'),
+#         'OPTIONS': {
+#             'charset': 'utf8mb4',
+#             'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'"
+#         },
+#     }
+# }
+
+
+X_FRAME_OPTIONS = 'SAMEORIGIN'
+
+
+
+
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -106,9 +131,6 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.2/topics/i18n/
-
 LANGUAGE_CODE = 'en-us'
 
 TIME_ZONE = 'Asia/Tehran'
@@ -118,30 +140,114 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-
-
-
-
-
-
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [BASE_DIR / "front" / "assets"]
+STATIC_ROOT = '/home/ilseuqko/public_html/static/'
 
-# media files (Images , ...)
+STATICFILES_DIRS = [BASE_DIR / "front" / "static"]
 
-MEDIA_URL ='/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+MEDIA_URL = '/media/'
+MEDIA_ROOT = '/home/ilseuqko/public_html/media/'
 
-
-
-
+CKEDITOR_UPLOAD_PATH = "uploads/"
 
 
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+LOG_DIR = os.path.join(BASE_DIR, 'logs')
+os.makedirs(LOG_DIR, exist_ok=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] [{levelname}] {name}:{lineno} — {message}',
+            'style': '{',
+        },
+    },
+
+    'handlers': {
+        'main_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'django_app.log'),
+            'formatter': 'verbose',
+            'maxBytes': 30 * 1024 * 1024,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+
+        'cms_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'cms.log'),
+            'formatter': 'verbose',
+            'maxBytes': 30 * 1024 * 1024,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+        'customers_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'customers.log'),
+            'formatter': 'verbose',
+            'maxBytes': 30 * 1024 * 1024,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+        'items_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'items.log'),
+            'formatter': 'verbose',
+            'maxBytes': 30 * 1024 * 1024,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+        'orders_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': os.path.join(LOG_DIR, 'orders.log'),
+            'formatter': 'verbose',
+            'maxBytes': 30 * 1024 * 1024,
+            'backupCount': 10,
+            'encoding': 'utf-8',
+        },
+    },
+    'root': {
+        'handlers': ['main_file'],
+        'level': 'INFO',
+    },
+
+    'loggers': {
+        'django': {
+            'handlers': [], 
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'cms': {
+            'handlers': ['cms_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'customers': {
+            'handlers': ['customers_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+        'items': {
+            'handlers': ['items_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'orders': {
+            'handlers': ['orders_file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'

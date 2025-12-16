@@ -16,24 +16,23 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path , include
-from conf.views import home_page , customer_home_page , customer_acceptance , customer_management , site_management , laundry_management , order_management
+from django.conf import settings
+from django.conf.urls.static import static
+from conf.admin import superuser_admin_site
 
 
 urlpatterns = [
-    path('', home_page , name='home' ),
-    path('customer_home_page', customer_home_page , name='customer_home_page' ),
-
-    path('customer_acceptance', customer_acceptance , name='customer_acceptance' ),
-    path('customer_management', customer_management , name='customer_management' ),
-    path('site_management', site_management , name='site_management' ),
-    path('laundry_management', laundry_management , name='laundry_management' ),
-    path('order_management', order_management , name='order_management' ),
-
-
-
-    path('admin/', admin.site.urls),
+    path('hamid_panel/', superuser_admin_site.urls),
+    path('ckeditor', include('ckeditor_uploader.urls')),
     path('customers/', include('Customers.urls')),
     path('items/', include('Items.urls')),
     path('orders/', include('Orders.urls')),
-
+    path('CMS/', include('CMS.urls')),
+    path('', include('conf.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
+handler404 = 'conf.views.custom_404'
