@@ -1,288 +1,49 @@
+{% load static %}
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <title>ویرایش سفارش</title>
-<style>
-body { font-family: sans-serif; margin: 20px; }
-h2 { margin-top: 30px; }
-input, select, button { margin: 5px 0; padding: 5px; }
-.item { margin-bottom: 10px; border: 1px solid #ccc; padding: 10px; }
-.message { margin: 10px 0; color: #333; }
-</style>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
 </head>
 <body>
+  {% include 'front/header.html' %}
+  {% include 'front/popup.html' %}
 
-<h1>ویرایش سفارش</h1>
+
+<h1>✏️ ویرایش سفارش</h1>
+
+<div class="container mt-4">
 <div id="message" class="message"></div>
+<div id="orderInfo" style="margin-bottom:15px; font-weight:bold;"></div>
 
-<form id="editOrderForm">
-  <label>شماره تلفن مشتری:</label>
-  <input type="text" name="phone" readonly><br>
-  <label>نام مشتری:</label>
-  <input type="text" name="fullname" readonly><br>
-
-  <label>وضعیت:</label>
-  <select name="status" id="statusSelect"></select><br>
-
-  <label>تاریخ ثبت سفارش:</label>
-  <input type="text" name="order_time" readonly><br>
-
-  <label>تاریخ تحویل:</label>
-  <input type="date" name="delivery_time"><br>
-
-  <h2>آیتم‌ها</h2>
+<form id="updateOrderForm">
   <div id="itemsContainer"></div>
-  <button type="button" id="addItemBtn">➕ افزودن آیتم</button><br><br>
+  <button type="button" id="addItemBtn">➕ اضافه کردن آیتم</button><br><br>
 
-  <button type="submit">💾 ذخیره تغییرات سفارش</button>
+  تخفیف: 
+  <select id="discountSelect">
+    <option value="0">بدون تخفیف</option>
+  </select><br><br>
+
+  مبلغ کل (بعد از تخفیف): 
+  <input type="number" id="grandTotal" readonly><br><br>
+
+  <div id="orderData" data-order-id="{{ order_id }}"></div>
+  <button type="submit">💾 ذخیره تغییرات</button>
 </form>
 
-<script>
-// ---------------- Helper ها -----------------
-function toYMD(str){
-  if(!str) return "";
-  const m = String(str).match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[1]}-${m[2]}-${m[3]}` : "";
-}
+<a href="{% url 'recent_orders' %}" class="btn-back">بازگشت</a>
 
-function getCookie(name){
-  let cookieValue=null;
-  if(document.cookie && document.cookie!==''){
-    for(let cookie of document.cookie.split(';')){
-      cookie=cookie.trim();
-      if(cookie.startsWith(name+'=')){
-        cookieValue=decodeURIComponent(cookie.substring(name.length+1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
 
-const csrftoken=getCookie('csrftoken');
-const messageDiv=document.getElementById('message');
-const itemsContainer=document.getElementById('itemsContainer');
-const statusSelect=document.getElementById('statusSelect');
+<link rel="stylesheet" href="{% static 'css/order_edit.css' %}">
+<script src="{% static 'js/order_edit.js' %}"></script>
 
-let order = null;
-let servicesList=[], clothesList=[], statusChoices=[], orderId=null;
 
-// ---------------- گرفتن id سفارش از URL -----------------
-function getOrderIdFromUrl(){
-  const parts=window.location.pathname.split('/');
-  return parts[parts.length-2]; // فرض: /orders/editpage/12/
-}
-
-// ---------------- Fetch API -----------------
-async function fetchServices(){ const r=await fetch('/items/allservices/'); servicesList=await r.json(); }
-async function fetchClothes(){ const r=await fetch('/items/allclothes/'); clothesList=await r.json(); }
-async function fetchStatusChoices(){ const r=await fetch('/orders/orderstatuschoices/'); statusChoices=await r.json(); }
-async function fetchOrderDetails(id){
-  const r=await fetch(`/orders/orderupdate/${id}/`);
-  if(!r.ok) throw new Error("سفارش یافت نشد");
-  return await r.json();
-}
-
-// ---------------- UI Helper ها -----------------
-function buildStatusOptions(current){
-  statusSelect.innerHTML=statusChoices.map(s=>
-    `<option value="${s.value}" ${s.value===current?'selected':''}>${s.label}</option>`
-  ).join('');
-}
-
-function getPrice(serviceId, clothId){
-  const s=servicesList.find(x=>x.id==serviceId);
-  const c=clothesList.find(x=>x.id==clothId);
-  return (s?s.base_price:0)+(c?c.price_modifier:0);
-}
-
-// ---------------- ساخت آیتم -----------------
-function addItem(itemData=null){
-  const div=document.createElement('div');
-  div.classList.add('item');
-  if(itemData && itemData.id){
-    div.dataset.itemId = itemData.id;   // ذخیره id آیتم موجود
-  }
-
-  const serviceOptions=servicesList.map(s=>
-    `<option value="${s.id}" ${itemData && itemData.service===s.id?'selected':''}>${s.name}</option>`
-  ).join('');
-  const clothOptions=clothesList.map(c=>
-    `<option value="${c.id}" ${itemData && itemData.cloth===c.id?'selected':''}>${c.name}</option>`
-  ).join('');
-
-  div.innerHTML=`
-    خدمت: <select class="serviceId">${serviceOptions}</select>
-    لباس: <select class="clothId">${clothOptions}</select>
-    تعداد: <input type="number" class="quantity" value="${itemData?itemData.quantity:1}" min="1">
-    قیمت واحد: <input type="number" class="unitPrice" readonly>
-    قیمت کل: <input type="number" class="totalPrice" readonly>
-    <button type="button" class="removeBtn">❌ حذف</button>
-    <button type="button" class="saveItemBtn">💾 ذخیره آیتم</button>
-  `;
-
-  const serviceEl = div.querySelector('.serviceId');
-  const clothEl = div.querySelector('.clothId');
-  const quantityEl = div.querySelector('.quantity');
-  const unitPriceEl = div.querySelector('.unitPrice');
-  const totalPriceEl = div.querySelector('.totalPrice');
-
-  function updatePrice(){
-    const unitPrice = getPrice(serviceEl.value, clothEl.value);
-    const quantity = parseInt(quantityEl.value) || 1;
-    unitPriceEl.value = unitPrice;
-    totalPriceEl.value = unitPrice * quantity;
-  }
-
-  serviceEl.addEventListener('change', updatePrice);
-  clothEl.addEventListener('change', updatePrice);
-  quantityEl.addEventListener('input', updatePrice);
-
-  updatePrice(); // مقداردهی اولیه
-  itemsContainer.appendChild(div);
-  return div;
-}
-
-// حذف آیتم
-async function deleteItem(div){
-  const itemId = div.dataset.itemId;
-  if(itemId){
-    const res = await fetch(`/orders/orderitemupdatedelete/${itemId}/`, {
-      method: "DELETE",
-      headers: { 'X-CSRFToken': csrftoken }
-    });
-    if(res.ok){
-      div.remove();
-      messageDiv.textContent = "✅ آیتم حذف شد.";
-    }else{
-      messageDiv.textContent = "❌ خطا در حذف آیتم.";
-    }
-  }else{
-    div.remove(); // آیتم جدیدی بود که هنوز ذخیره نشده
-  }
-}
-
-// ذخیره آیتم جدید
-async function saveNewItem(div){
-  const service = parseInt(div.querySelector('.serviceId').value);
-  const cloth = parseInt(div.querySelector('.clothId').value);
-  const quantity = parseInt(div.querySelector('.quantity').value);
-
-  const payload = { service, cloth, quantity };
-
-  const res = await fetch(`/orders/orderitemcreate/${orderId}/`, {
-    method: "POST",
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-    body: JSON.stringify(payload)
-  });
-
-  const data = await res.json();
-  if(res.ok){
-    div.dataset.itemId = data.id;  // آیتم جدید حالا id داره
-    messageDiv.textContent = "✅ آیتم جدید اضافه شد.";
-  }else{
-    messageDiv.textContent = "❌ خطا در افزودن آیتم.";
-  }
-}
-
-// آپدیت آیتم موجود
-async function updateItem(div){
-  const itemId = div.dataset.itemId;
-  if(!itemId){
-    return saveNewItem(div); // اگر جدید بود → POST
-  }
-
-  const service = parseInt(div.querySelector('.serviceId').value);
-  const cloth = parseInt(div.querySelector('.clothId').value);
-  const quantity = parseInt(div.querySelector('.quantity').value);
-
-  const payload = { service, cloth, quantity };
-
-  const res = await fetch(`/orders/orderitemupdatedelete/${itemId}/`, {
-    method: "PATCH",
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-    body: JSON.stringify(payload)
-  });
-
-  if(res.ok){
-    messageDiv.textContent = "✅ آیتم ویرایش شد.";
-  }else{
-    messageDiv.textContent = "❌ خطا در ویرایش آیتم.";
-  }
-}
-
-// ---------------- ذخیره تغییرات سفارش -----------------
-async function saveChanges(e){
-  e.preventDefault();
-  if (!order) return;
-
-  const status = document.querySelector('[name="status"]').value;
-  const deliveryInput = document.querySelector('[name="delivery_time"]').value.trim();
-
-  const payload = {
-    status,
-    ...(deliveryInput ? { delivery_time: deliveryInput } : {})
-  };
-
-  const res = await fetch(`/orders/orderupdate/${orderId}/`, {
-    method: "PATCH",
-    headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-    body: JSON.stringify(payload)
-  });
-
-  if(res.ok){
-    messageDiv.textContent = "✅ تغییرات سفارش ذخیره شد.";
-  }else{
-    messageDiv.textContent = "❌ خطا در ذخیره سفارش.";
-  }
-}
-
-// ---------------- Init -----------------
-async function init(){
-  orderId=getOrderIdFromUrl();
-  try{
-    await Promise.all([fetchServices(), fetchClothes(), fetchStatusChoices()]);
-    order=await fetchOrderDetails(orderId);
-
-    document.querySelector('[name="phone"]').value=order.customer_phone;
-    document.querySelector('[name="fullname"]').value=order.customer_name;
-    buildStatusOptions(order.status);
-
-    // تاریخ ثبت سفارش
-    document.querySelector('[name="order_time"]').value = toYMD(order.order_time);
-
-    // تاریخ تحویل
-    if(order.delivery_time){
-      document.querySelector('[name="delivery_time"]').value = toYMD(order.delivery_time);
-    }
-
-    // آیتم‌ها
-    itemsContainer.innerHTML="";
-    if(order.items && order.items.length){
-      order.items.forEach(it=>{
-        const div = addItem(it);
-        // اتصال رویدادها
-        div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
-        div.querySelector('.saveItemBtn').addEventListener('click', ()=>updateItem(div));
-      });
-    } else {
-      const div = addItem();
-      div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
-      div.querySelector('.saveItemBtn').addEventListener('click', ()=>saveNewItem(div));
-    }
-
-  }catch(err){ messageDiv.textContent="❌ "+err.message; }
-
-  document.getElementById('addItemBtn').addEventListener('click',()=>{
-    const div = addItem();
-    div.querySelector('.removeBtn').addEventListener('click', ()=>deleteItem(div));
-    div.querySelector('.saveItemBtn').addEventListener('click', ()=>saveNewItem(div));
-  });
-  document.getElementById('editOrderForm').addEventListener('submit',saveChanges);
-}
-
-document.addEventListener('DOMContentLoaded',init);
-</script>
+</div>
 </body>
 </html>
