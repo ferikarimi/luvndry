@@ -1,97 +1,234 @@
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .serializers import CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer , CommentRecentlySerializer
-from .models import Customers , Comments
+from rest_framework.pagination import PageNumberPagination
+from django.db.models import Q
+import logging
+from rest_framework import status
+from rest_framework.permissions import IsAdminUser
+from .models import (
+    Customers , Comments
+)
+from .serializers import (
+    CustomerUpdateProfileSerializer , CustomerRegisterSerializer , CustomerInfoSerializer , CommentCreateSerializer , CommentAdminSerializer , CommentRecentlySerializer , AllCustomersSerializer
+)
 
 
 
+logger = logging.getLogger('customers')
 
+
+
+"""
+    این ویو برای ثبت نام یک مشتری جدید در سایت استفاده می شود
+    دسترسی فقط برای ادمین مجاز است
+"""
 class CustomerRegister(APIView):
-    def post (self , request):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request):
+        logger.info(f"درخواست ثبت‌نام مشتری جدید توسط {request.user if request.user.is_authenticated else 'کاربر ناشناس'}")
         serializer = CustomerRegisterSerializer(data=request.data)
+
         if serializer.is_valid():
-            serializer.save()
-            return Response (serializer.data , status=201)
-        return Response (serializer.errors , status=400)
-    
+            customer = serializer.save()
+            logger.info(f"مشتری جدید با کد {customer.code} ثبت شد.")
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-class CustomerUpdateProfile (APIView):
-    # def get (self , request):
-    #     customer = request.customer
-    #     serializer = CustomerUpdateProfileSerializer(customer)
-    #     return Response(serializer.data , status=200)
-
-    def patch (self , request):
-        code = request.data.get('code')
-        phone = request.data.get('phone')
-
-        if code :
-            customer = get_object_or_404 (Customers , code=code)
-        elif phone :
-            customer = get_object_or_404 (Customers , phone=phone)
-        else :
-            return Response({"ERROR : code or phone is required."} , status=400)
-
-        serializer = CustomerUpdateProfileSerializer(customer , data=request.data ,  partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data , status=200)
+        logger.warning(f"داده نامعتبر در ثبت‌نام مشتری: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CustomerFind (APIView):
+
+"""
+    این ویو برای گرفتن یک مشتری خاص با کد مشتری و ویرایش کردن اطلاعات آن استفاده می شود
+    دسترسی فقط برای ادمین مجاز است
+"""
+class CustomerUpdateProfile(APIView):
+    permission_classes = [IsAdminUser]
+
     def get(self, request):
-        code = request.GET.get('code')
-        phone = request.GET.get('phone')
+        code = request.query_params.get('code')
+        if not code:
+            logger.warning("درخواست مشاهده پروفایل بدون ارسال کد مشتری.")
+            return Response({"error": "code is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not code and not phone:
-            return Response({"error": "phone or code is required."}, status=400)
+        customer = get_object_or_404(Customers, code=code)
+        logger.info(f"پروفایل مشتری با کد {code} واکشی شد.")
+        serializer = CustomerUpdateProfileSerializer(customer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        try:
-            if code:
-                customer = Customers.objects.get(code=code)
-            else:
-                customer = Customers.objects.get(phone=phone)
-        except Customers.DoesNotExist:
-            return Response({"error": "customer not found"}, status=404)
+    def patch(self, request):
+        data = request.data.copy()
+        code = data.pop('code', None)
+        if not code:
+            logger.warning("درخواست به‌روزرسانی پروفایل بدون ارسال کد مشتری.")
+            return Response({"error": "code is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = CustomerInfoSerializer(customer)
-        return Response(serializer.data)
+        customer = get_object_or_404(Customers, code=code)
+        serializer = CustomerUpdateProfileSerializer(customer, data=data, partial=True)
+        if not serializer.is_valid():
+            logger.warning(f"داده نامعتبر در به‌روزرسانی پروفایل مشتری {code}: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer.save()
+        logger.info(f"پروفایل مشتری {code} با موفقیت به‌روزرسانی شد.")
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-class CustomerCommentsCreate (APIView):
-    def post (self , request):
+
+"""
+    این ویو برای حذف یک مشتری از دیتابیس استفاده می شود
+    دسترسی فقط برای ادمین مجاز است
+"""
+class CustomerDelete(APIView):
+    permission_classes = [IsAdminUser]
+
+    def delete(self, request, code):
+        logger.warning(f"درخواست حذف مشتری با کد {code} توسط {request.user if request.user.is_authenticated else 'کاربر ناشناس'}")
+        customer = get_object_or_404(Customers, code=code)
+        customer.delete()
+        logger.info(f"مشتری با کد {code} با موفقیت حذف شد.")
+        return Response({"message": "Customer deleted successfully."}, status=status.HTTP_204_NO_CONTENT)
+
+
+
+"""
+    این ویو برای ثبت یک کامنت جدید توسط یک مشتری است
+    اگر مشتری از خدمات ما استفاده نکرده باشد ، نمیتواند نظری ثبت کند
+"""
+class CustomerCommentsCreate(APIView):
+
+    def post(self, request):
+        logger.info(f"درخواست ثبت کامنت جدید توسط {request.user if request.user.is_authenticated else 'کاربر ناشناس'}")
         serializer = CommentCreateSerializer(data=request.data)
+
         if serializer.is_valid():
             serializer.save()
-            return Response ({"MESSAGE : Your comment has been submitted and will be displayed after approval."} , status=201)
-        return Response (serializer.errors , status=400)
+            logger.info("کامنت جدید با موفقیت ثبت شد و در انتظار تأیید است.")
+            return Response(
+                {"MESSAGE": "Your comment has been submitted and will be displayed after approval."},
+                status=status.HTTP_201_CREATED
+            )
+
+        logger.warning(f"داده نامعتبر در ثبت کامنت: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class AdminCommentList (APIView):
-    def get (self , request):
-        comments = Comments.objects.all().order_by('-created_at')
-        serializer = CommentAdminSerializer(comments , many=True)
-        return Response (serializer.data , status=200)
-    
 
-class AdminCommentStatus (APIView):
-    def patch (self , request , pk):
-        try :
+"""
+    ادمین به کمک این ویو میتواند وضعیت کامنت ها را تغییر دهد
+    کامنت هایی که تایید شده باشد روی سایت نمایش داده می شوند
+    دسترسی فقط برای ادمین مجاز است
+"""
+class AdminCommentStatus(APIView):
+    permission_classes = [IsAdminUser]
+
+    def patch(self, request, pk):
+        logger.info(f"ادمین {request.user.username if request.user.is_authenticated else 'ناشناس'} درخواست تغییر وضعیت کامنت با شناسه {pk} را ارسال کرد.")
+        try:
             comment = Comments.objects.get(id=pk)
-        except Comments.DoesNotExist :
-            return Response ({"ERROR : comment not found!"} , status=404)
-        
-        serializer = CommentAdminSerializer (comment , data=request.data , partial=True)
+        except Comments.DoesNotExist:
+            logger.warning(f"کامنت با شناسه {pk} یافت نشد.")
+            return Response({"error": "comment not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        serializer = CommentAdminSerializer(comment, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            return Response (serializer.data , status=200)
-        return Response (serializer.errors , status=400)
-    
+            logger.info(f"وضعیت کامنت {pk} با موفقیت به‌روزرسانی شد.")
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        logger.warning(f"داده نامعتبر برای ویرایش کامنت {pk}: {serializer.errors}")
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CommentRecently (APIView):
+
+"""
+    پانزده نظر اخیر که ثبت شده و توسط ادمین تایید شده اند، روی سایت نمایش داده می شوند
+"""
+class CommentRecently(APIView):
+    def get(self, request):
+        recent_comments = Comments.objects.filter(status='approved').order_by('-created_at')[:15]
+        serializer = CommentRecentlySerializer(recent_comments, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+
+"""
+    این ویو برای پیدا کردن مشتری بر اساس "کد مشتری" ، "شماره تلفن مشتری" و "نام مشتری" است
+    جستجو بر اساس 'fullname' و 'phone' و 'code' جزئی است:
+    دسترسی فقط برای ادمین مجاز است
+"""
+class AllCustomers(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        search_query = request.GET.get('search', '').strip()
+        customers = Customers.objects.all().order_by('id')
+
+        if search_query:
+            customers = customers.filter(
+                Q(fullname__icontains=search_query) |
+                Q(phone__icontains=search_query) |
+                Q(code__icontains=search_query)
+            )
+            logger.debug(f"تعداد مشتریان مطابق با فیلتر '{search_query}': {customers.count()}")
+
+        paginator = PageNumberPagination()
+        paginator.page_size = 12
+        result_page = paginator.paginate_queryset(customers, request)
+        serializer = AllCustomersSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+
+"""
+    این کلاس برای صفحه بندی کردن کامت ها است
+"""
+class CommentPagination(PageNumberPagination):
+    page_size = 30
+    page_size_query_param = 'page_size'  
+    max_page_size = 60
+
+
+
+"""
+    این ویو برای نمایش تمام کامنت ها برای ادمین است
+    دسترسی فقط برای ادمین مجاز است
+"""
+class AdminCommentList(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        logger.info(f"ادمین {request.user.username if request.user.is_authenticated else 'ناشناس'} درخواست مشاهده‌ی لیست همه‌ی کامنت‌ها را ارسال کرد.")
+        comments = Comments.objects.all().order_by('-created_at')
+        paginator = CommentPagination()
+        result_page = paginator.paginate_queryset(comments, request)
+        serializer = CommentAdminSerializer(result_page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
+
+
+"""
+    این ویو برای نمایش تعداد مشتری های سطح برنزی، نقره ای و طلایی است
+"""
+class CustomerLevel(APIView):
     def get(self , request):
-        recent_comments = Comments.objects.filter(status='approved').order_by('-created_at')[:4]
-        serializer = CommentRecentlySerializer(recent_comments , many=True)
-        return Response (serializer.data , status=200)
+        bronze = silver = gold = 0
+
+        for customer in Customers.objects.all():
+            order_count = customer.orders.count()
+
+            if 10 <= order_count < 20 :
+                bronze += 1
+            elif 20 <= order_count < 30 :
+                silver += 1
+            elif 30 <= order_count :
+                gold += 1
+
+        data = {
+            "bronze":bronze,
+            "silver":silver,
+            "gold":gold
+        }
+        return Response(data)
