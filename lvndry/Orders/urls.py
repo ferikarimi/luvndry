@@ -1,22 +1,19 @@
 from django.urls import path
-from .views import OrderCreate , OrderUpdate , OrderTracking , OrderDelete , OrderItemCreate , OrderItemUpdateDelete  , OrderRecent , OrderStatusUpdate , OrderStatusChoices , order_edit
+from .views import (
+    OrderCreate , OrderManagment ,  OrderTracking , AllActiveOrdersList , OrderStatusUpdate , Stats , CustomerOrders , OrderDetail , CheckCustomer 
+)
+
+
 
 urlpatterns = [
-    path('ordercreate/', OrderCreate.as_view() , name='OrderCreate'),
-    path('orderupdate/<int:pk>/', OrderUpdate.as_view() , name='OrderUpdate'),
-    path('orderdelete/<int:pk>/', OrderDelete.as_view() , name='OrderDelete'),
-
-    path('orderitemcreate/<int:order_id>/', OrderItemCreate.as_view() , name='orderitemcreate'),
-    path('orderitemupdatedelete/<int:item_id>/', OrderItemUpdateDelete.as_view() , name='orderitemupdatedelete'),
-
-
-
-    path('ordertracking/', OrderTracking.as_view() , name='OrderTracking'),
-    path('orderrecent/', OrderRecent.as_view() , name='orderrecent'),
+    path('ordercreate/', OrderCreate.as_view() , name='ordercreate'),
+    path('ordermanagment/<int:pk>/', OrderManagment.as_view() , name='ordermanagment'),
+    path('ordertracking/', OrderTracking.as_view() , name='ordertracking'),
+    path('allactiveorderslist/', AllActiveOrdersList.as_view() , name='allactiveorderslist'),
     path('orderstatusupdate/<int:pk>/', OrderStatusUpdate.as_view() , name='orderstatusupdate'),
-    path('orderstatuschoices/', OrderStatusChoices.as_view() , name='orderstatuschoices'),
-
-    path('editpage/<int:pk>/', order_edit , name='order_edit'),
-
+    path('stats/', Stats.as_view() , name='stats'),
+    path('customerorders/<int:id>/', CustomerOrders.as_view() , name='customerorders'),
+    path('detail/<int:pk>/', OrderDetail.as_view(), name='order-detail'),
+    path('checkcustomer/', CheckCustomer.as_view() , name='checkcustomer'),
 
 ]
