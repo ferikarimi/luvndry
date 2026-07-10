@@ -212,3 +212,40 @@ hr {
 .invoice-summary p {
   margin: 0.5rem 0;
 }
+
+
+
+
+
+
+
+
+.customer-info-row{
+    display:flex;
+    align-items:flex-start;
+    width:100%;
+    margin-bottom:15px;
+}
+
+.customer-name{
+    width:50%;
+}
+
+.customer-space{
+    width:21%;
+}
+
+.customer-level{
+    width:25%;
+}
+
+.customer-name input,
+.customer-level input{
+    width:100%;
+    box-sizing:border-box;
+}
+
+.customer-level input{
+    background:#f5f5f5;
+    cursor:default;
+}
