@@ -2,6 +2,8 @@ from rest_framework import serializers
 from Customers.models import Customers
 from django.utils import timezone
 import jdatetime
+from Customers.models import validate_iran_phone
+from Customers.services import update_customer_level
 from .models import (
     Orders , OrderItems
 )
@@ -37,31 +39,6 @@ class DateJaliliMixin:
             result = result.replace(en, fa)
         
         return result
-
-
-
-"""
-    از این میکسین برای تخفیف خودکار برای افرادی که بیشتر از 10 بار مراجعه کرده اند استفاده می شود
-    ده الی بیست سفارش شامل 5 درصد تخفیف می شود
-    بیست الی سی سفارش شامل 10 درصد تخفیف می شود
-    سی سفارش به بالا شامل 15 درصد تخفیف می شود
-"""
-class LoyaltyDiscountMixin:
-
-    @staticmethod
-    def get_loyalty_discount(customer):
-        orders_count = customer.orders.count()
-
-        if orders_count <= 10:
-            loyalty_discount = 0
-        elif orders_count <= 20:
-            loyalty_discount = 3
-        elif orders_count <= 30:
-            loyalty_discount = 5
-        else:
-            loyalty_discount = 10
-
-        return loyalty_discount
 
 
 
@@ -161,8 +138,8 @@ class OrderDetailSerializer(DateJaliliMixin , serializers.ModelSerializer):
     6. خروجی:
         - سفارش ساخته شده با مقادیر total_amount و final_amount بروزرسانی و بازگردانده می‌شود
 """
-class OrderCreateSerializer(LoyaltyDiscountMixin , serializers.ModelSerializer):
-    phone = serializers.CharField(write_only=True)
+class OrderCreateSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(write_only=True , validators=[validate_iran_phone])
     items = OrderItemSerializer(many=True, write_only=True)
     fullname = serializers.CharField(write_only=True, required=False, allow_blank=True)
     address = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -184,8 +161,9 @@ class OrderCreateSerializer(LoyaltyDiscountMixin , serializers.ModelSerializer):
             raise serializers.ValidationError(f"Status must be one of {allowed}.")
         return value
 
-    def validate(self, attrs):
-        return attrs
+    def validate_phone_number(self, value):
+        validate_iran_phone(value)
+        return value
 
     def create(self, validated_data):
         phone = validated_data.pop("phone")
@@ -220,15 +198,18 @@ class OrderCreateSerializer(LoyaltyDiscountMixin , serializers.ModelSerializer):
 
             customer.save()
 
-        loyalty_discount = self.get_loyalty_discount(customer)
+        if customer.level:
+            loyalty_discount = customer.level.discount_percent
+        else:
+            loyalty_discount = 0
 
         order = Orders.objects.create(
             customer=customer,
-            discount_amount=validated_data.get('discount_amount', 0),
+            discount_amount=validated_data.get("discount_amount", 0),
             total_amount=0,
             final_amount=0,
-            status=validated_data.get('status', 'In progress'),
-            delivery_time=validated_data.get('delivery_time')
+            status=validated_data.get("status", "In progress"),
+            delivery_time=validated_data.get("delivery_time"),
         )
 
         total_amount = 0
@@ -239,7 +220,6 @@ class OrderCreateSerializer(LoyaltyDiscountMixin , serializers.ModelSerializer):
             quantity = item.get('quantity', 1)
             is_express = item.get('is_express', False)
             extra_services = item.get('extra_services', [])
-            extras_list = []
 
             if isinstance(service, int):
                 service_obj = Services.objects.get(pk=service)
@@ -299,10 +279,22 @@ class OrderCreateSerializer(LoyaltyDiscountMixin , serializers.ModelSerializer):
     این سریالایزر برای بررسی و نمایش سریع اطلاعات مشتری ثبت نام شده، استفاده می شود
 """
 class CheckCustomerSerializer(serializers.ModelSerializer):
+    level = serializers.SerializerMethodField()
+    discount = serializers.SerializerMethodField()
 
     class Meta:
         model = Customers
-        fields = ['fullname', 'address', 'phone', 'code']
+        fields = ['fullname', 'address', 'phone', 'code', 'level', 'discount']
+
+    def get_level(self, obj):
+        if obj.level:
+            return obj.level.name
+        return None
+
+    def get_discount(self, obj):
+        if obj.level:
+            return obj.level.discount_percent
+        return 0
 
 
 
@@ -373,7 +365,7 @@ class OrderSerializer(DateJaliliMixin , serializers.ModelSerializer):
         fields = ['id', 'customer_id','discount_amount', 'total_amount', 'final_amount', 'status', 'order_time', 'delivery_time', 'order_items' ,'is_delivered', 'order_time_jalali', 'delivery_time_jalali' ,'status_display']
 
     def get_is_delivered (self , obj):
-        return obj.status == 'In progress'
+        return obj.status == 'Delivered'
 
     def get_order_time_jalali(self, obj):
         return self.to_jalili(obj.order_time)
@@ -406,13 +398,19 @@ class OrderStatusUpdateSerializer(DateJaliliMixin , serializers.ModelSerializer)
         return value
     
     def update(self, instance, validated_data):
-        new_status = validated_data.get('status', instance.status)
 
-        if new_status == 'Delivered' and not instance.delivery_time :
+        old_status = instance.status
+        new_status = validated_data.get("status", instance.status)
+
+        if new_status == "Delivered" and not instance.delivery_time:
             instance.delivery_time = timezone.now()
-        
+
         instance.status = new_status
         instance.save()
+
+        if old_status != "Delivered" and new_status == "Delivered":
+            update_customer_level(instance.customer)
+
         return instance
     
     def get_delivery_time_jalili(self , obj):
@@ -424,28 +422,27 @@ class OrderStatusUpdateSerializer(DateJaliliMixin , serializers.ModelSerializer)
     این سریالایزر اطلاعات مشتری از جمله : نام ، کد و تلفن را نمایش می دهد
     نام خدمت و لباس ، تعداد ، قیمت واحد ، قیمت کل و عجله ای بودن سفارش را نمایش می دهد
 """
-class AllActiveOrdersListSerializer(serializers.ModelSerializer , DateJaliliMixin):
-    order_id = serializers.IntegerField(source='order.id', read_only=True)
-    customer_code = serializers.CharField(source='order.customer.code', read_only=True)
-    customer_name = serializers.CharField(source='order.customer.fullname', read_only=True)
-    customer_phone = serializers.CharField(source='order.customer.phone' ,read_only=True)
-    service_name = serializers.CharField(source='service.name', read_only=True)
-    cloth_name = serializers.CharField(source='cloth.name', read_only=True)
-    is_express = serializers.BooleanField(read_only=True)
-    status = serializers.CharField(source='order.status', read_only=True)
-    status_display = serializers.CharField(source='order.get_status_display', read_only=True)
-    final_amount = serializers.SerializerMethodField()
+class AllActiveOrdersListSerializer(serializers.ModelSerializer, DateJaliliMixin):
+    order_id = serializers.IntegerField(source='id', read_only=True)
+    customer_code = serializers.CharField(source='customer.code', read_only=True)
+    customer_name = serializers.CharField(source='customer.fullname', read_only=True)
+    customer_phone = serializers.CharField(source='customer.phone', read_only=True)
+    customer_level = serializers.CharField(source='customer.level.name', read_only=True)
+    
+    delivered_orders_count = serializers.IntegerField(read_only=True)
+    
+    status = serializers.CharField(read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    final_amount = serializers.IntegerField(read_only=True)
     order_date = serializers.SerializerMethodField()
+    items = OrderItemSerializer(source='order_items', many=True, read_only=True)
 
     class Meta:
-        model = OrderItems
-        fields = ["id", "order_id", "customer_code","customer_name", "customer_phone","service_name", "cloth_name","quantity", "unit_price", "final_amount" ,"total_price","is_express" , "status" , "status_display" , "order_date"]
-    
-    def get_final_amount(self , obj):
-        return obj.order.final_amount
-    
+        model = Orders
+        fields = ['order_id', 'customer_code','delivered_orders_count', 'customer_name', 'customer_phone','customer_level','status', 'status_display', 'final_amount', 'order_date', 'items']
+
     def get_order_date(self, obj):
-        return self.to_jalili(obj.order.order_time)
+        return self.to_jalili(obj.order_time)
 
 
 
@@ -483,7 +480,7 @@ class OrderItemUpdateSerializer(serializers.ModelSerializer):
     از جمله اپدیت وضعیت ، تخفیف ، آیتم ها و محاسبه مبلغ نهایی
     همنچنین اطلاعات مشتری هم به صورت read_only نمایش داده می شود
 """
-class OrderUpdateSerializer(DateJaliliMixin , LoyaltyDiscountMixin , serializers.ModelSerializer):
+class OrderUpdateSerializer(DateJaliliMixin , serializers.ModelSerializer):
     status = serializers.ChoiceField(choices=Orders.STATUS_CHOICE_FIELDS, required=False)
     order_items = OrderItemUpdateSerializer(many=True, required=False)
     customer_code = serializers.IntegerField(source="customer.code", read_only=True)

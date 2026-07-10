@@ -1,4 +1,5 @@
 import logging
+from django.db.models import Count , Q
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Orders, OrderItems
@@ -7,6 +8,7 @@ from django.db.models import Case, When, Value, IntegerField
 from rest_framework.pagination import PageNumberPagination
 from datetime import date
 import jdatetime
+from django.db.models import Sum
 from rest_framework.permissions import IsAdminUser
 from rest_framework import status
 from .serializers import (
@@ -29,7 +31,6 @@ class OrderCreate(APIView):
 
     def post(self, request):
         logger.info(f"[User: {request.user.username}] [Action: Create Order]")
-        print("Request data:", request.data)
 
         serializer = OrderCreateSerializer(data=request.data)
         if serializer.is_valid():
@@ -51,22 +52,47 @@ class OrderCreate(APIView):
 class CheckCustomer(APIView):
     permission_classes = [IsAdminUser]
 
+    # def get(self, request):
+    #     phone = request.query_params.get("phone")
+
+    #     if not phone:
+    #         return Response({"detail": "Phone is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    #     try:
+    #         customer = Customers.objects.get(phone=phone)
+    #     except Customers.DoesNotExist:
+    #         return Response({"exists": False}, status=status.HTTP_200_OK)
+
+    #     data = CheckCustomerSerializer(customer).data
+
+    #     return Response({"exists": True, "customer": data})
+
     def get(self, request):
         phone = request.query_params.get("phone")
 
         if not phone:
-            return Response({"detail": "Phone is required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "Phone is required."}, status=400)
 
         try:
             customer = Customers.objects.get(phone=phone)
-        except Customers.DoesNotExist:
-            return Response({"exists": False}, status=status.HTTP_200_OK)
 
-        data = CheckCustomerSerializer(customer).data
+            serializer = CheckCustomerSerializer(customer)
 
-        return Response({"exists": True, "customer": data})
+            return Response({
+                "exists": True,
+                "customer": serializer.data
+            })
 
-
+        except Exception as e:
+            return Response({"error": str(e)}, status=500)
+        
+        
+        
+        
+        
+        
+        
+        
 
 """
     از این ویو برای نمایش اعداد در داخل صفحه ی عمومی سایت توی قسمت 'باشگاه مشتریان' استفاده می شود
@@ -79,14 +105,14 @@ class Stats(APIView):
 
         reference_date = date(2010, 1, 1)
         days_passed = (date.today() - reference_date).days
-        total_days = start_days + (days_passed // 7) * 7
+        total_days = start_days + (days_passed //6 ) * 6
 
         orders_count = Orders.objects.count()
-        total_orders = start_orders + (orders_count // 7) * 7
+        total_orders = start_orders + (orders_count // 11 ) * 11 
 
-        items_count = OrderItems.objects.count()
-        total_items = start_items + (items_count // 7) * 7
-
+        items_count = OrderItems.objects.aggregate(total=Sum("quantity"))["total"] or 0
+        total_items = start_items + (items_count //11) * 11
+        
         return Response({
             "days": total_days,
             "orders": total_orders,
@@ -125,11 +151,12 @@ class CustomerOrders(APIView):
             .prefetch_related('order_items__service', 'order_items__cloth', 'order_items__extra_services') \
             .annotate(
                 delivered_order=Case(
-                    When(status="In progress", then=Value(1)),
+                    When(status="Delivered", then=Value(1)),
                     default=Value(0),
                     output_field=IntegerField(),
                 )
-            ).order_by("delivered_order", "-order_time")  
+            ).order_by("-delivered_order", "-order_time")
+  
 
         orders_serialized = OrderSerializer(orders, many=True).data
         customer_serialized = CustomerSerializer(customer).data
@@ -160,7 +187,7 @@ class OrderDetail(APIView):
 
 
 """
-    این ویو تمام سفارشات را نشان می دهد
+    این ویو تمام سفارشاتی که تحویل داده نشده اند را نشان می دهد
     امکان جست و جو از طریق کد مشتری ، نام مشتری ، شماره سفارش و تاریخ ثبت سفارش وجود دارد
     نتایج به صورت 30 تایی فرستاده می شود
     امکان فیلتر کردن بر اساس 'عجله ای' بودن ، وجود دارد
@@ -170,13 +197,21 @@ class AllActiveOrdersList(APIView):
     permission_classes = [IsAdminUser]
 
     def get(self, request):
-        queryset = OrderItems.objects.filter(
-            order__status__in=['In progress', 'Completed']
-        ).select_related("order", "order__customer", "service", "cloth").order_by('-order__order_time')
+        delivered = request.GET.get("delivered")
+        
+        if delivered and delivered.lower() in ["true","1"] :
+            queryset = Orders.objects.filter(status="Delivered").order_by("-order_time")
+        
+        else :
+            queryset = Orders.objects.filter(status__in=["In progress","Completed"])
+        
+        
+        
+        queryset = queryset.select_related("customer","customer__level").annotate(delivered_orders_count=Count("customer__orders",filter=Q(customer__orders__status="Delivered")))
 
         is_express = request.GET.get('is_express')
         if is_express and is_express.lower() in ['true', '1']:
-            queryset = queryset.filter(is_express=True)
+            queryset = queryset.filter(order_items__is_express=True)
 
         customer_code = request.GET.get('customer_code', '').strip()
         customer_name = request.GET.get('customer_name', '').strip()
@@ -184,23 +219,34 @@ class AllActiveOrdersList(APIView):
         order_date = request.GET.get('order_date', '').strip()
 
         if customer_code:
-            queryset = queryset.filter(order__customer__code__icontains=customer_code)
-
+            queryset = queryset.filter(customer__code__icontains=customer_code)
         if customer_name:
-            queryset = queryset.filter(order__customer__fullname__icontains=customer_name)
-
+            queryset = queryset.filter(customer__fullname__icontains=customer_name)
         if order_id:
-            queryset = queryset.filter(order__id=order_id)
-
+            queryset = queryset.filter(id=order_id)
         if order_date:
             try:
                 g_date = jdatetime.datetime.strptime(order_date, "%Y/%m/%d").togregorian().date()
-                queryset = queryset.filter(order__order_time__date=g_date)
+                queryset = queryset.filter(order_time__date=g_date)
             except Exception:
-                queryset = queryset.filter(order__order_time__date=order_date)
+                queryset = queryset.filter(order_time__date=order_date)
 
+        queryset = queryset.prefetch_related('order_items', 'order_items__service', 'order_items__cloth', 'order_items__extra_services')
+
+        if delivered and delivered.lower() in ["true" , "1"] :
+            queryset = queryset.order_by("-order_time")[:50]
+        else :
+            queryset = queryset.order_by("-order_time")
+            
         paginator = PageNumberPagination()
-        paginator.page_size = 30
+
+        if delivered and delivered.lower() in ["true" , "1"] :
+            paginator.page_size = 25
+        else :
+            paginator.page_size = 30
+            
+            
+            
         result_page = paginator.paginate_queryset(queryset, request)
 
         serializer = AllActiveOrdersListSerializer(result_page, many=True)
