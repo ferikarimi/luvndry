@@ -1,14 +1,14 @@
 from django.contrib.admin import AdminSite
 from django.contrib import admin
 from CMS.models import GalleryImage
-from Customers.models import Customers, Comments
+from Customers.models import Customers, Comments , CustomerLevel
 from Items.models import Clothes, Services, ExtraServices, Discount
 from Orders.models import Orders, OrderItems
 
 from Items.admin import ClothesAdmin, ServicesAdmin, ExtraServicesAdmin, DiscountAdmin
 from Orders.admin import OrderItemsAdmin , OrdersAdmin
 from CMS.admin import GalleryImageAdmin , MagazineArticleAdmin , MagazineArticle , Notification , NotificationAdmin
-from Customers.admin import CustomersAdmin , CommentsAdmin
+from Customers.admin import CustomersAdmin , CommentsAdmin, CustomerLevelAdmin
 
 
 class SuperUserAdminSite(AdminSite):
@@ -29,6 +29,7 @@ superuser_admin_site.register(Notification, NotificationAdmin)
 
 superuser_admin_site.register(Customers , CustomersAdmin)
 superuser_admin_site.register(Comments , CommentsAdmin)
+superuser_admin_site.register(CustomerLevel, CustomerLevelAdmin)
 superuser_admin_site.register(Clothes, ClothesAdmin)
 superuser_admin_site.register(Services, ServicesAdmin)
 superuser_admin_site.register(ExtraServices, ExtraServicesAdmin)
