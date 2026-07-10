@@ -29,10 +29,24 @@
       <button type="button" id="checkCustomerBtn">بررسی مشتری</button>
       <br>
       <div id="checkCustomerMessage" style="color:red;"></div>
-      نام مشتری:
-      <input type="text" name="fullname" placeholder="نام مشتری (اختیاری)"><br>
-      آدرس مشتری:
-      <input type="text" name="address" placeholder="آدرس مشتری (اختیاری)"><br>
+        <div class="customer-info-row">
+
+            <div class="customer-name">
+                <label for="fullname">نام مشتری:</label>
+                <input type="text" id="fullname" name="fullname" placeholder="نام مشتری (اختیاری)">
+            </div>
+
+            <div class="customer-space"></div>
+
+            <div class="customer-level">
+                <label for="customerLevel">سطح مشتری:</label>
+                <input type="text" id="customerLevel" value="بدون سطح" readonly>
+            </div>
+
+        </div>
+
+        آدرس مشتری :
+        <textarea name="address" rows="3" placeholder="آدرس مشتری (اختیاری)"></textarea><br><br>
 
       <div id="itemsContainer"></div>
       <button type="button" id="addItemBtn">➕ اضافه کردن آیتم</button><br><br>

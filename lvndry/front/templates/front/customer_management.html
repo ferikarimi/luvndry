@@ -2,38 +2,80 @@
 
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<title>مدیریت مشتریان</title>
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+<head>
+
+    <meta charset="UTF-8">
+
+    <title>مدیریت مشتریان</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+
+    <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+    <link rel="stylesheet" href="{% static 'css/customer_managment.css' %}">
 
 </head>
+
 <body>
-  {% include 'front/header.html' %}
-  {% include 'front/popup.html' %}
 
+    {% include 'front/header.html' %}
+    {% include 'front/popup.html' %}
 
-<a href="{% url 'admin_home_page' %}" class="btn-back">بازگشت</a>
+    <a href="{% url 'admin_home_page' %}" class="btn-back">
+        بازگشت
+    </a>
 
-<div class="container mt-4">
-  <h2 class="text-center mb-4">👥 مدیریت مشتریان</h2>
-  <div class="input-group mb-3">
-    <input type="text" id="searchInput" class="form-control" placeholder="جستجو بر اساس نام، شماره یا کد مشتری">
-    <button id="searchBtn" class="btn btn-primary">🔍 جستجو</button>
-    <button id="resetBtn" class="btn btn-secondary">♻️ ریست</button>
-  </div>
-  <div id="customersList" class="row"></div>
-  <div class="text-center mt-3">
-    <button id="prevPage" class="btn btn-outline-primary me-2">➡ صفحه قبل</button>
-    <button id="nextPage" class="btn btn-outline-primary">صفحه بعد ⬅</button>
-  </div>
-</div>
+    <div class="container mt-4">
 
+        <h2 class="text-center mb-4">
+            👥 مدیریت مشتریان
+        </h2>
 
-<link rel="stylesheet" href="{% static 'css/customer_managment.css' %}">
+        <div class="row g-2 mb-3">
 
-<script src="{% static 'js/customer_managment.js' %}"></script>
+            <div class="col-md-2">
+                <select id="levelFilter" class="form-select">
+                    <option value="">همه مشتری‌ها</option>
+                    <option value="bronze">🥉 برنزی</option>
+                    <option value="silver">🥈 نقره‌ای</option>
+                    <option value="gold">🥇 طلایی</option>
+                </select>
+            </div>
+
+            <div class="col-md-6">
+                <input
+                    type="text"
+                    id="searchInput"
+                    class="form-control"
+                    placeholder="جستجو بر اساس نام، شماره یا کد مشتری">
+            </div>
+
+            <div class="col-md-2 d-grid">
+                <button id="searchBtn" class="btn btn-primary">
+                    🔍 جستجو
+                </button>
+            </div>
+
+            <div class="col-md-2 d-grid">
+                <button id="resetBtn" class="btn btn-secondary">
+                    ♻️ ریست
+                </button>
+            </div>
+
+        </div>
+
+        <div id="customersList" class="row"></div>
+
+        <nav class="mt-4">
+            <ul id="pagination" class="pagination justify-content-center"></ul>
+        </nav>
+
+    </div>
+
+    <script src="{% static 'js/customer_managment.js' %}"></script>
+
 </body>
+
 </html>

@@ -24,7 +24,11 @@
 
   <div id="ordersList">در حال بارگذاری...</div>
 </div>
-<a href="{% url 'admin_home_page' %}" class="btn-back">بازگشت</a>
+
+<a href="{% url 'admin_home_page' %}" class="btn-back" style="left: 20px;">بازگشت به داشبورد</a>
+<a href="{% url 'customer_management' %}" class="btn-back" style="left: 200px;">بازگشت به لیست مشتریان</a>
+
+
 <link rel="stylesheet" href="{% static 'css/customer_order.css' %}">
 
 <script src="{% static 'js/customer_order.js' %}"></script>
