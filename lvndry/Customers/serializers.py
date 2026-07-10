@@ -78,8 +78,8 @@ class CustomerInfoSerializer (serializers.ModelSerializer):
 
     class Meta :
         model = Customers
-        fields = ['code','phone' , 'fullname' , 'address']
-        read_only_fields = ['code','phone' , 'fullname' , 'address']
+        fields = ['code','phone' , 'fullname' , 'address','level']
+        read_only_fields = ['code','phone' , 'fullname' , 'address','level']
 
 
 """

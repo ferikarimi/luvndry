@@ -14,6 +14,20 @@ def validate_iran_phone(value):
 
 
 """
+    این جدول برای سطح بندی مشتری ها است
+"""
+class CustomerLevel (models.Model):
+    name = models.CharField(max_length=50)
+    discount_percent = models.PositiveIntegerField()
+    
+    class Meta:
+        verbose_name_plural = "سطح مشتریان"
+    def __str__(self):
+        return self.name
+
+
+
+"""
     این مدل برای مشتری های سایت ساخته شده
     مشتری ها بر اساس شماره تلفن های منحصر به فرد شناخته می شوند
 """
@@ -22,6 +36,7 @@ class Customers (models.Model):
     fullname = models.CharField(max_length=255 , null=True , blank=True)
     phone = models.CharField(unique=True , max_length=11 , validators=[validate_iran_phone])
     address = models.CharField(max_length=255 , null=True , blank=True)
+    level = models.ForeignKey(CustomerLevel , on_delete=models.PROTECT , related_name="customers" , null=True , blank=True)
     code = models.PositiveIntegerField(unique=True , null=True , blank=True)
 
     class Meta:
@@ -29,6 +44,10 @@ class Customers (models.Model):
 
     def __str__(self):
         return f"{self.fullname}"
+
+
+
+
 
 
 

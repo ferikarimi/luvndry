@@ -1,14 +1,18 @@
 from django.contrib import admin
-from .models import Customers, Comments
+from .models import Customers, Comments , CustomerLevel
 
 
+class CustomerLevelAdmin(admin.ModelAdmin):
+    list_display=('name','discount_percent')
+    
+    
 class CustomersAdmin(admin.ModelAdmin):
     list_display = ('fullname', 'phone', 'code')
     search_fields = ('fullname', 'phone', 'code')
     ordering = ('fullname',)
     fieldsets = (
         ('اطلاعات مشتری', {
-            'fields': ('fullname', 'phone', 'code', 'address')
+            'fields': ('fullname', 'phone', 'code', 'address' , 'level')
         }),
     )
     readonly_fields = ()

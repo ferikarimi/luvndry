@@ -6,6 +6,7 @@ from django.db.models import Q
 import logging
 from rest_framework import status
 from rest_framework.permissions import IsAdminUser
+from .utils import filter_customer_level
 from .models import (
     Customers , Comments
 )
@@ -164,7 +165,12 @@ class AllCustomers(APIView):
 
     def get(self, request):
         search_query = request.GET.get('search', '').strip()
+        level = request.GET.get('level', '').strip().lower()
+
         customers = Customers.objects.all().order_by('id')
+
+        if level:
+            customers = filter_customer_level(customers, level)
 
         if search_query:
             customers = customers.filter(
@@ -172,12 +178,13 @@ class AllCustomers(APIView):
                 Q(phone__icontains=search_query) |
                 Q(code__icontains=search_query)
             )
-            logger.debug(f"تعداد مشتریان مطابق با فیلتر '{search_query}': {customers.count()}")
 
         paginator = PageNumberPagination()
         paginator.page_size = 12
+
         result_page = paginator.paginate_queryset(customers, request)
         serializer = AllCustomersSerializer(result_page, many=True)
+
         return paginator.get_paginated_response(serializer.data)
 
 
@@ -213,22 +220,19 @@ class AdminCommentList(APIView):
     این ویو برای نمایش تعداد مشتری های سطح برنزی، نقره ای و طلایی است
 """
 class CustomerLevel(APIView):
-    def get(self , request):
-        bronze = silver = gold = 0
 
-        for customer in Customers.objects.all():
-            order_count = customer.orders.count()
+    def get(self, request):
 
-            if 10 <= order_count < 20 :
-                bronze += 1
-            elif 20 <= order_count < 30 :
-                silver += 1
-            elif 30 <= order_count :
-                gold += 1
+        customers = Customers.objects.all()
+
+        bronze = 464 + filter_customer_level(customers, "bronze").count()
+        silver = 227 + filter_customer_level(customers, "silver").count()
+        gold = 73 + filter_customer_level(customers, "gold").count()
 
         data = {
-            "bronze":bronze,
-            "silver":silver,
-            "gold":gold
+            "bronze": bronze,
+            "silver": silver,
+            "gold": gold,
         }
+
         return Response(data)
