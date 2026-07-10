@@ -1,0 +1,107 @@
+@import url('fonts.css');
+
+body {
+  direction: rtl;
+  text-align: right;
+  padding: 0;
+  margin: 0;
+}
+
+
+.management-title {
+  text-align: center;
+  color: black;
+  font-size: 2.7rem;
+  margin-top: 35px;
+  margin-bottom: 50px;
+}
+
+.management-panel {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 65vh;
+}
+
+.button-columns {
+  display: flex;
+  gap: 60px;
+  justify-content: center;
+}
+
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 35px;
+  min-width: 180px;
+  align-items: center;
+}
+
+.management-panel .btn-custom {
+  background-color: #1d486b;
+  color: white;
+  border: none;
+  width: 280px;
+  height: 111px;
+  font-size: 1.35rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+
+.management-panel .btn-custom:hover {
+  background-color: white;
+  color: rgb(12, 11, 11);
+}
+
+@media (max-width: 768px) {
+  .button-columns {
+    flex-direction: column;
+    gap: 20px;
+    align-items: center;
+  }
+
+  .column {
+    width: 100%;
+    align-items: center;
+  }
+
+  .management-panel .btn-custom {
+    width: 95%;
+    padding: 20px 0;
+    font-size: 1.35rem;
+  }
+}
+
+.btn-back {
+  position: fixed;     
+  bottom: 20px;       
+  left: 20px;        
+  padding: 10px 20px;
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff; 
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-back:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.btn-back:active {
+  transform: translateY(0);
+}
+
+.btn-back:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.5);
+}

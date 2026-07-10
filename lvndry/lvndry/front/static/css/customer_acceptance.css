@@ -1,0 +1,214 @@
+@import url('fonts.css');
+
+body { 
+    margin: 0;
+    padding: 0; 
+}
+
+h2 { 
+    margin-top: 40px;
+    margin-bottom: 15px;
+}
+
+input, select, button { 
+    margin: 5px 0; 
+    padding: 5px; 
+}
+
+.item {
+    width: 92%;
+    display: flex;
+    flex-direction: column; 
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+}
+
+.item .line1 {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.line1 .right-group {
+    display: flex;
+    gap: 20px; 
+}
+
+.line1 .left-group {
+    text-align: left;
+}
+
+.item .line2 {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.item .extraServices {
+    display: flex;
+    gap: 10px;
+}
+
+.item .extraService {
+    display: inline-block;
+    padding: 2px 6px;
+    background: #f3f3f3;
+    border-radius: 4px;
+}
+
+.item .totalPrice {
+    font-weight: bold;
+    color: #333;
+}
+
+.item .removeBtn {
+    align-self:flex-end;
+    margin-top: 5px;
+}
+
+.message { 
+  color: #333; 
+  margin-bottom: 10px; 
+}
+
+.btn-back {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  padding: 10px 20px;
+  display: inline-block;
+  padding: 10px 20px;
+  background-color: #007bff; 
+  color: white;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: bold;
+  transition: background-color 0.3s, transform 0.2s;
+}
+
+.btn-back:hover {
+  background-color: #0056b3;
+  transform: translateY(-2px);
+}
+
+.btn-back:active {
+  transform: translateY(0);
+}
+
+.btn-back:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.5);
+}
+
+#message, #customerMessage {
+  color: green;
+  margin-bottom: 10px;
+}
+.order-invoice-container {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 40px;
+}
+#createOrderForm {
+  flex: 2;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+#createOrderForm input[type="text"],
+#createOrderForm input[type="number"],
+#createOrderForm select,
+#createOrderForm textarea {
+  width: 95%;
+  margin-bottom: 10px;
+  padding: 5px;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+}
+#createOrderForm button {
+  padding: 5px 15px;
+  margin-top: 10px;
+  cursor: pointer;
+}
+
+#invoiceContainer {
+  flex: 1;
+  background-color: #fff;
+  border: 1px solid #999;
+  padding: 15px;
+  border-radius: 5px;
+  max-height: 80vh;
+  overflow-y: auto;
+  background-color: #fff;
+  top: 20px;
+  position: sticky;
+}
+#invoiceContainer h2 {
+  text-align: center;
+  margin-top: 0;
+}
+#invoiceItems {
+  margin-top: 10px;
+}
+hr {
+  border: 0;
+  border-top: 1px dashed #ccc;
+}
+
+.line1, .line2, .line3 {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 5px;
+  align-items: center;
+}
+.extraServices label {
+  display: block;
+}
+.order-invoice-container {
+  display: flex;
+  gap: 20px;
+}
+
+#invoiceTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+#invoiceTable th,
+#invoiceTable td {
+  border: 1px solid #ccc;
+  padding: 5px;
+  background-color: #f0f0f0;
+}
+
+#invoiceTable tfoot td {
+  font-weight: bold;
+  background-color: #f9f9f9;
+}
+
+.order-page {
+  display: flex;
+  gap: 20px;
+}
+
+.order-section {
+  flex: 2;
+}
+.invoice-summary {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-top: 2px solid #ccc;
+  font-weight: bold;
+  background-color: #fafafa;
+}
+.invoice-summary p {
+  margin: 0.5rem 0;
+}

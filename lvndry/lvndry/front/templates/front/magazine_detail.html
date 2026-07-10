@@ -1,0 +1,216 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+  
+    <meta charset="utf-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+
+    <title>{{ article.title }}</title>
+
+    <link href="{% static 'img/logo/logo2.png' %}" rel="icon">
+    <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/aos/aos.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
+    <link href="{% static 'vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'css/magazine_detail.css' %}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+</head>
+
+<body class="index-page">
+
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container position-relative d-flex align-items-center justify-content-between">
+      <a href="/" class="logo d-flex align-items-center me-auto me-xl-0">
+        <img src="{% static 'img/logo/logo.png' %}" alt="لوگو" class="logo-img">
+      </a>
+
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="/#about">درباره ما</a></li>
+          <li><a href="/#magazine">مجله آویژه</a></li>
+          <li><a href="/#why-us">چرا ما</a></li>
+          <li><a href="/#gallery">نمونه کار</a></li>
+          <li><a href="/#order-tracking">پیگیری سفارشات</a></li>
+          <li><a href="/#stats">باشگاه مشتریان</a></li>
+          <li><a href="/#comments">نظرات مشتریان</a></li>
+          <li><a href="/#Team">تیم ما</a></li>
+          <li><a href="/#contact">چگونه مارا پیدا کنید</a></li>
+
+          {% if request.user.is_authenticated and request.user.is_superuser %}
+            <li><a href="{% url 'admin_home_page' %}">مدیریت</a></li>
+          {% endif %}
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+    </div>
+  </header>
+
+
+  <main class="mt-5 pt-4">
+    <div class="container">
+
+      <div class="magazine-detail">
+        <img src="{{ article.image.url }}" alt="{{ article.title }}">
+        <h1>{{ article.title }}</h1>
+        <p class="summary">{{ article.summary }}</p>
+        <div class="content">{{ article.content|safe }}</div>
+      </div>
+
+      <div class="mag-slider-wrapper magazine-swiper" style="width:90%; margin:50px auto;">
+        <div id="magazineList" class="swiper-wrapper"></div>
+        <div class="swiper-pagination"></div>
+      </div>
+      
+
+      <a href="{% url 'home' %}" class="btn-back">بازگشت</a>
+
+    </div>
+  </main>
+
+
+  <footer id="footer" class="footer dark-background">
+
+    <div class="container">
+      <div class="row gy-3">
+
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-geo-alt icon"></i>
+          <div class="address">
+            <h4>آدرس</h4>
+            <p>فارس،صفاشهر، ناحیه 1، بلوار امام خمینی ، جنب بانک مهر‌ایران،(خرازی زارع زاده سابق)</p>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-telephone icon"></i>
+          <div>
+            <h4>تماس با ما</h4>
+            <p>
+              <strong>شماره تماس:</strong>09172442147<br>
+              <strong>شماره تماس:</strong>07144452811<br>
+            </p>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-clock icon"></i>
+          <div>
+            <h4>ساعات کاری</h4>
+            <p>
+              <strong>شنبه - پنجشنبه:</strong> 8 الی 13 - 16 الی 21<br>
+              <strong>جمعه:</strong> تعطیل
+            </p>
+          </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+          <h4>ما را در فضای مجازی دنبال کنید</h4>
+          <div class="social-links d-flex">
+            <a href="https://youtube.com/@luvndry" target="_blank" class="youtube"><i class="bi bi-youtube"></i></a>
+            <a href="https://wa.me/989172442147" target="_blank" class="whatsapp"><i class="bi bi-whatsapp"></i></a>
+            <a href="https://www.instagram.com/ali__laundry" target="_blank" class="instagram"><i class="bi bi-instagram"></i></a>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span>
+        <strong class="px-1 sitename">Luvndry</strong>
+        <span>2025. All Rights Reserved</span>
+      </p>
+      <div class="credits">
+        Website designed & developed by
+        <a href="https://t.me/farzad_karimi1" target="_blank">Farzad</a>
+      </div>
+    </div>
+
+  </footer>
+  <script src="{% static 'vendor/swiper/swiper-bundle.min.js' %}"></script>
+  <script>
+  const magazineApiUrl = '/CMS/magazines/';
+  
+  async function loadMagazineArticles() {
+    try {
+      const res = await fetch(magazineApiUrl);
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const articles = await res.json();
+  
+      const container = document.getElementById('magazineList');
+      container.innerHTML = ''; 
+  
+      (articles || []).forEach(article => {
+        const slide = document.createElement('div');
+        slide.className = 'swiper-slide';
+  
+        const card = document.createElement('div');
+        card.className = 'magazine-card';
+        card.onclick = () => { window.location = '/magazine/' + article.id + '/'; };
+  
+        const img = document.createElement('img');
+        img.className = 'mag-card-media';
+        img.src = article.image || '';
+        img.alt = article.title || 'image';
+        img.onerror = () => { img.src = 'https://via.placeholder.com/600?text=No+Image'; };
+  
+        const content = document.createElement('div');
+        content.className = 'magazine-content';
+  
+        const h = document.createElement('h3');
+        h.textContent = article.title || '';
+  
+        const p = document.createElement('p');
+        p.textContent = article.summary || '';
+  
+        const a = document.createElement('a');
+        a.className = 'read-btn';
+        a.href = '/magazine/' + article.id + '/';
+        a.textContent = 'مطالعه بیشتر';
+  
+        content.appendChild(h);
+        content.appendChild(p);
+        content.appendChild(a);
+  
+        card.appendChild(img);
+        card.appendChild(content);
+        slide.appendChild(card);
+        container.appendChild(slide);
+      });
+  
+      initSwiper();
+  
+    } catch (err) {
+      console.error('خطا در بارگذاری مقالات:', err);
+    }
+  }
+  
+  function initSwiper() {
+    new Swiper('.magazine-swiper', {
+      slidesPerView: 'auto',
+      centeredSlides: true,
+      loop: true,
+      spaceBetween: 25,
+      speed: 500,        // نیم ثانیه سرعت جا به جایی
+      autoplay: {
+        delay: 6000,     // ۶ ثانیه فاصله بین اسلایدها
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: '.swiper-pagination',
+        clickable: true,
+      },
+    });
+  }
+  
+  document.addEventListener('DOMContentLoaded', loadMagazineArticles);
+  </script>
+  
+</body>
+</html>

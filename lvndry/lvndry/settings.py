@@ -20,12 +20,11 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = "asdfffffffffasdfasdfl2314kjjkff;;lik"
 
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = False
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']
-
+ALLOWED_HOSTS = ['luvndry.ir', 'www.luvndry.ir']
 
 
 INSTALLED_APPS = [
@@ -87,26 +86,20 @@ pymysql.install_as_MySQLdb()
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / "db.sqlite3",
+        'ENGINE':'django.db.backends.mysql',
+        'NAME': 'tjgwciyd_luvndry_db' ,
+        'USER': 'tjgwciyd_hamid20dey' ,
+        'PASSWORD': 'hamid20dey' ,
+        'HOST': 'localhost',
+        'PORT': '3306',
+        'OPTIONS': {
+            'charset': 'utf8mb4',
+            'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'"
+        },
     }
 }
 
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': os.getenv('DB_ENGINE', 'django.db.backends.mysql'),
-#         'NAME': os.getenv('DB_NAME', 'mydb'),
-#         'USER': os.getenv('DB_USER', 'myuser'),
-#         'PASSWORD': os.getenv('DB_PASSWORD', 'mypassword'),
-#         'HOST': os.getenv('DB_HOST', 'localhost'),
-#         'PORT': os.getenv('DB_PORT', '3306'),
-#         'OPTIONS': {
-#             'charset': 'utf8mb4',
-#             'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'"
-#         },
-#     }
-# }
 
 
 X_FRAME_OPTIONS = 'SAMEORIGIN'
@@ -141,12 +134,12 @@ USE_TZ = True
 
 
 STATIC_URL = '/static/'
-STATIC_ROOT = '/home/ilseuqko/public_html/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 STATICFILES_DIRS = [BASE_DIR / "front" / "static"]
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/home/ilseuqko/public_html/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 CKEDITOR_UPLOAD_PATH = "uploads/"
 

@@ -1,0 +1,559 @@
+{% load static %}
+
+
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+
+<head>
+  <meta charset="utf-8">
+  <meta content="width=device-width, initial-scale=1.0" name="viewport">
+  <title>Luvndry</title>
+  <meta name="description" content="">
+  <meta name="keywords" content="">
+
+  <link href="{% static 'img/logo/logo2.png' %}" rel="icon">
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/bootstrap-icons/bootstrap-icons.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/aos/aos.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/glightbox/css/glightbox.min.css' %}" rel="stylesheet">
+  <link href="{% static 'vendor/swiper/swiper-bundle.min.css' %}" rel="stylesheet">
+  <link href="{% static 'css/main.css' %}" rel="stylesheet">
+
+</head>
+
+<body class="index-page">
+  {% include "front/popup.html" %}
+
+  <header id="header" class="header d-flex align-items-center sticky-top">
+    <div class="container position-relative d-flex align-items-center justify-content-between">
+      <a href="" class="logo d-flex align-items-center me-auto me-xl-0">
+        <img src="{% static 'img/logo/logo.png' %}" alt="لوگو" class="logo-img">
+      </a>
+      <nav id="navmenu" class="navmenu">
+        <ul>
+          <li><a href="#about">درباره ما</a></li>
+          <li><a href="#magazine">مجله آویژه</a></li>
+          <li><a href="#why-us">چرا ما</a></li>
+          <li><a href="#gallery">نمونه کار</a></li>
+          <li><a href="#order-tracking">پیگیری سفارشات</a></li>
+          <li><a href="#stats">باشگاه مشتریان</a></li>
+          <li><a href="#comments">نظرات مشتریان</a></li>
+          <li><a href="#Team">تیم ما</a></li>
+          <li><a href="#contact">چگونه مارا پیدا کنید</a></li>
+          {% if request.user.is_authenticated and request.user.is_superuser %}
+            <li><a href="{% url 'admin_home_page' %}">مدیریت</a></li>
+          {% endif %}
+        </ul>
+        <i class="mobile-nav-toggle d-xl-none bi bi-list"></i>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main">
+    <section id="hero" class="hero section">
+      <div class="container">
+        <div class="row gy-4 justify-content-center justify-content-lg-between">
+          <div class="col-lg-5 order-2 order-lg-1 d-flex flex-column justify-content-center">
+            <h1 data-aos="fade-up" style="margin-bottom: 65px;">آویژه<br></h1>
+            <p data-aos="fade-up" data-aos-delay="50">تنها یک نام نیست؛ یک نگاه است.</p>
+            <p data-aos="fade-up" data-aos-delay="50">
+              نگاهی که در هر تار و پود، معنا و ظرافت را جستجو می‌کند.
+              ما در آویژه باور داریم که تمیزی فقط یک خدمت نیست،
+              بلکه نشانه‌ای از احترام به زیبایی، نظم و اصالت است.
+              هر لباس برای ما ارزش یگانه‌ای دارد. 
+            </p>
+            <p data-aos="fade-up" data-aos-delay="50"><strong>چون هر مشتری آویژه است </strong> خاص، ممتاز، بی‌همتا.</p>
+            <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
+              <a href="#order-tracking" class="btn-get-started">پیگری سفارش</a>
+              <a href="{% static 'video/lvndry.mp4' %}" class="glightbox btn-watch-video d-flex align-items-center" data-type="video">
+                <i class="bi bi-play-circle"></i>
+                <span>برای اطلاعات بیشتر ویدیو را مشاهده کنید</span>
+              </a>
+            </div>
+          </div>
+          <div class="col-lg-5 order-1 order-lg-2 hero-img" data-aos="zoom-out">
+            <img src="{% static 'img/hero-img.png' %}" class="img-fluid animated" alt="">
+          </div>
+        </div>
+      </div>
+
+
+      <div id="latestNotification"></div>
+
+    </section>
+
+    <section id="about" class="about section">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span class="description-title">درباره ما</span> <span>بیشتر بدانید</span></p>
+      </div>
+    
+      <div class="container">
+        <div class="row gy-4 align-items-start">
+    
+          <div class="col-12 col-lg-6" data-aos="fade-up" data-aos-delay="50">
+            <img src="{% static 'img/about.jpg' %}" class="img-fluid img-fixed mb-3" alt="About">
+    
+            <div class="content text-rtl">
+              <p><strong>"پاکیزگی در دستان ماست"</strong> این فقط یک شعار نیست؛ باور ماست.</p>
+              <p>
+                ما در خشکشویی علی، از سال ۱۳۸۹ تا به امروز با عشق به لباس‌های شما خدمت کرده ایم.
+                تجربه‌ی ما، همراه با دستگاه‌های مدرن و شوینده‌های خاص،
+                لباس‌های شما را نه فقط تمیز، بلکه "مرتب و محترم" تحویل می‌دهیم.
+              </p>
+    
+              <ul class="check-list">
+                <li><i class="bi bi-check-circle-fill"></i> <span>هر لباس با دقت بررسی میشه</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>هر لکه‌ با تخصص پاک میشه</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>هر لباس مثل روز اول تحویل داده میشه</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>ما به کیفیت، احترام به مشتری و حفظ پارچه‌ها پایبندیم.</span></li>
+              </ul>
+            </div>
+          </div>
+    
+          <div class="col-12 col-lg-6" data-aos="fade-up" data-aos-delay="150">
+            <div class="content text-english mb-3">
+              <p><strong>"Cleanliness is in our hands"</strong> — this is not just a slogan; it is our belief.</p>
+              <p>
+                At Ali Laundry, since 2010 (1389 in the Iranian calendar), we have been serving your clothes with love.
+                Our experience, combined with modern machines and special detergents,
+                ensures your clothes are delivered not just clean, but "neat and respected."
+              </p>
+    
+              <ul class="check-list">
+                <li><i class="bi bi-check-circle-fill"></i> <span>Every garment is carefully inspected</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>Every stain is removed with expertise</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>Every piece of clothing is returned like new</span></li>
+                <li><i class="bi bi-check-circle-fill"></i> <span>We are committed to quality, customer respect, and fabric care</span></li>
+              </ul>
+            </div>
+    
+            <img src="{% static 'img/about-2.jpg' %}" class="img-fluid img-fixed" alt="About 2">
+          </div>
+    
+        </div>
+      </div>
+    </section>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css">
+
+    <section id="magazine" class="magazine section section-blue">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span>مجله</span> <span class="description-title">آویژه</span></p>
+      </div>
+    
+      <div class="swiper magazine-swiper" data-aos="fade-up">
+        <div class="swiper-wrapper" id="magazineList"></div>
+        <div class="swiper-pagination"></div>
+      </div>
+    </section>
+    
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+    <section id="why-us" class="why-us section">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span class="description-title">چرا</span> <span>ما</span></p>
+      </div>
+      <div class="container">
+        <div class="row gy-4">
+          <div class="col-lg-4" data-aos="fade-up" data-aos-delay="50">
+            <div class="why-box">
+              <h3>چرا آویژه ؟</h3>
+              <p>
+                آویژه انتخابی لوکس برای کسانی‌ست که پاکیزگی و کیفیت را در اولویت قرار می‌دهند:
+                <li><i></i> <span>تجربه‌ای درخشان از سال ۱۳۸۹</span></li>
+                <li><i></i> <span>مواد و دستگاه‌های کاملاً تخصصی</span></li>
+                <li><i></i> <span>ضدعفونی کامل پتو و کالای خواب</span></li>
+                <li><i></i> <span>تحویل سریع و حرفه ای</span></li>
+              </p>
+            </div>
+          </div>
+
+          <div class="col-lg-8 d-flex align-items-stretch">
+            <div class="row gy-4" data-aos="fade-up" data-aos-delay="200">
+
+              <div class="col-xl-4">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <img src="{% static 'img/images/machine.png' %}" style="width:45px; height:45px; object-fit:contain; margin-bottom:35px;"><h4>مواد و دستگاه‌های تخصصی</h4>
+                  <p>استفاده از جدیدترین دستگاه‌ها و شوینده‌های حرفه‌ای برای ماندگاری و کیفیت بی‌نظیر لباس‌ها.</p>
+                </div>
+              </div>
+
+              <div class="col-xl-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <img src="{% static 'img/images/disinfection.png' %}" style="width:45px; height:45px; object-fit:contain; margin-bottom:35px;">
+                  <h4>ضدعفونی کامل کالای خواب</h4>
+                  <p>شست‌وشوی تخصصی پتو و کالای خواب همراه با ضدعفونی کامل، برای خوابی سالم و آرام.
+                    </p>
+                </div>
+              </div>
+
+              <div class="col-xl-4" data-aos="fade-up" data-aos-delay="400">
+                <div class="icon-box d-flex flex-column justify-content-center align-items-center">
+                  <img src="{% static 'img/images/delivery.png' %}" style="width:45px; height:45px; object-fit:contain; margin-bottom:35px;">
+                  <h4>تحویل سریع و حرفه ای</h4>
+                  <p>تحویل سفارش‌ها در کوتاه‌ترین زمان ممکن، با نهایت دقت و اطمینان خاطر.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+
+    {% if gallery_images %}
+    <section id="gallery" class="gallery section section-blue">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span>نمونه کارها را </span> <span class="description-title">بررسی کنید</span></p>
+      </div>
+    
+      <div class="container" data-aos="fade-up" data-aos-delay="50">
+        <div class="swiper init-swiper">
+          <script type="application/json" class="swiper-config">
+            {
+              "loop": true,
+              "speed": 600,
+              "autoplay": { "delay": 7500 },
+              "slidesPerView": 3,
+              "centeredSlides": true,
+              "pagination": {
+                "el": ".swiper-pagination",
+                "type": "bullets",
+                "clickable": true
+              },
+              "breakpoints": {
+                "320": { "slidesPerView": 1, "spaceBetween": 0 },
+                "768": { "slidesPerView": 2, "spaceBetween": 5 },
+                "1200": { "slidesPerView": 3, "spaceBetween": 10 }
+              }
+            }
+          </script>
+        
+          <div class="swiper-wrapper align-items-center">
+            {% for image in gallery_images %}
+              <div class="swiper-slide">
+                <a class="glightbox" data-gallery="images-gallery" href="{{ image.image.url }}">
+                  <img src="{{ image.image.url }}" class="img-fluid" alt="{{ image.title }}" loading="lazy">
+                </a>
+              </div>
+            {% endfor %}
+          </div>
+          <div class="swiper-pagination"></div>
+        </div>
+      </div>
+    </section>
+    {% else %}
+    <section id="gallery" class="gallery section">
+      <div class="container text-center" style="padding: 60px 0;">
+        <p style="color: #777;">در حال حاضر هیچ تصویری در گالری وجود ندارد.</p>
+      </div>
+    </section>
+    {% endif %}
+
+
+
+    <section id="order-tracking" class="book-a-table section">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span>وضعیت</span> <span class="description-title">آخرین سفارش شما</span></p>
+      </div>
+      <div class="container-fluid p-0">
+        <div class="row g-0" data-aos="fade-up" data-aos-delay="50">
+          <div class="col-lg-12 d-flex align-items-center justify-content-center">
+            <form id="orderForm" class="my-comment-form" action="javascript:void(0);">
+              <div class="row gy-4 justify-content-center">
+                <div class="col-lg-12 col-md-12 col-12">
+                  <input type="text" class="form-control" name="phone" id="phone" placeholder="شماره موبایل خود را وارد کنید " required>
+                </div>
+              </div>
+              <div class="text-center mt-3">
+                <div id="loading" class="loading" style="display:none;">در حال بررسی...</div>
+                <div id="error-message" class="error-message" style="color:red; margin-top:8px;"></div>
+                <div id="result-message" class="result-message" style="color:green; margin-top:8px; display:none;"></div>
+                <button type="button" id="checkOrderBtn" class="btn btn-primary mt-2" style="background-color:#2EBFE6; -webkit-text-fill-color:#fff; padding:8px 20px; border:none; border-radius:50px; cursor:pointer;">بررسی وضعیت</button>
+              </div>
+              <div id="order-status" class="text-center mt-3" style="margin-top:12px;"></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="stats" class="stats section dark-background" dir="rtl">
+      <img src="{% static 'img/stats.jpg' %}" alt="" data-aos="fade-in">
+      <div class="container position-relative" data-aos="fade-up" data-aos-delay="50">
+        <div class="row gy-4">
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="days-counter">0</span>
+              </div>
+              <p>روز در کنار شما بودیم</p>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="orders-counter">0</span>
+              </div>
+              <p>فاکتور</p>
+            </div>
+          </div>
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="items-counter">0</span>
+              </div>
+              <p>اقلام</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section> 
+  
+
+    
+
+    <section id="comments" class="contact section" >
+      <div class="container section-title" data-aos="fade-up" >
+        <p>کاربران درمورد <span class="description-title">ما چه میگویند</span></p>
+      </div>
+      <div class="container" data-aos="fade-up" data-aos-delay="50">
+        <div class="swiper init-swiper">
+          <script type="application/json" class="swiper-config">
+            {
+              "loop": true,
+              "speed": 600,
+              "autoplay": {
+                "delay": 10000
+              },
+              "slidesPerView": "auto",
+              "pagination": {
+                "el": ".swiper-pagination",
+                "type": "bullets",
+                "clickable": true
+              }
+            }
+          </script>
+          <div id="commentsWrapper" class="swiper-wrapper"></div>
+          <div class="swiper-pagination"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="comment-section">
+      <div class="container section-title" data-aos="fade-up">
+        <p>ارسال <span class="description-title">نظر</span></p>
+      </div>
+    
+      <form id="commentForm" class="php-email-form" data-aos="fade-up" data-aos-delay="600" novalidate>
+        <div class="comment-card" data-aos="fade-up">
+    
+          <div class="row gy-4">
+            <div class="col-12">
+              <input type="text" id="phone" name="phone" class="form-control" placeholder="شماره تلفن شما" required>
+            </div>
+            <div class="col-12">
+              <textarea id="text" name="text" class="form-control" rows="6" placeholder="متن کامنت شما" required></textarea>
+            </div>
+            <div class="col-12 text-center">
+              <div class="loading" style="display:none;">در حال ارسال...</div>
+              <div class="error-message" style="color:red;"></div>
+              <div class="sent-message" style="color:green; display:none;">کامنت شما ثبت شد و بعد از تایید نمایش داده خواهد شد.</div>
+              <button type="submit" class="submit-btn">ارسال کامنت</button>
+            </div>
+          </div>
+    
+        </div>
+      </form>
+    </section>
+
+
+
+
+    <section id="customer-level-stats" class="stats section dark-background" dir="rtl">
+      <img src="{% static 'img/stats2.jpg' %}" alt="" data-aos="fade-in">
+      <div class="container position-relative" data-aos="fade-up" data-aos-delay="50">
+        <div class="row gy-4">
+          
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="bronze-counter">0</span>
+              </div>
+              <p>مشتریان سطح برنزی</p>
+            </div>
+          </div>
+    
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="silver-counter">0</span>
+              </div>
+              <p>مشتریان سطح نقره‌ای</p>
+            </div>
+          </div>
+    
+          <div class="col-lg-4 col-md-6 text-center">
+            <div class="stats-item text-center w-100 h-100">
+              <div style="display:inline-block; direction:ltr; font-weight:bold; font-size:2rem;">
+                <span id="gold-counter">0</span>
+              </div>
+              <p>مشتریان سطح طلایی</p>
+            </div>
+          </div>
+    
+        </div>
+      </div>
+    </section>
+    
+    <section id="Team" class="chefs section section-blue">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span class="description-title">کارکنان </span><span>ما</span></p>
+      </div>
+    
+      <div class="container">
+        <div class="row gy-4">
+    
+          <div class="team-member" data-aos="fade-up" data-aos-delay="50">
+            <div class="member-img">
+              <img src="{% static 'img/hamid.jpg' %}" alt="">
+            </div>
+            <div class="member-info">
+              <h4>حمید کریمی</h4>
+              <span>مدیریت خشکشویی آویژه</span>
+            </div>
+          </div>
+    
+          <div class="team-member" data-aos="fade-up" data-aos-delay="50">
+            <div class="member-img">
+              <img src="{% static 'img/sepideh.jpg' %}" alt="">
+            </div>
+            <div class="member-info">
+              <h4>سپیده زارع زاده</h4>
+              <span>امور مشتریان</span>
+            </div>
+          </div>
+    
+          <div class="team-member" data-aos="fade-up" data-aos-delay="50">
+            <div class="member-img">
+              <img src="{% static 'img/ali.jpg' %}" alt="">
+            </div>
+            <div class="member-info">
+              <h4>علی کریمی</h4>
+              <span>مدیریت خشکشویی علی</span>
+            </div>
+          </div>
+    
+        </div>
+      </div>
+    </section>
+    
+    <section id="contact" class="contact section">
+      <div class="container section-title" data-aos="fade-up">
+        <p><span>ما را </span> <span class="description-title">پیدا کنید</span></p>
+      </div>
+      <div class="container" data-aos="fade-up" data-aos-delay="50">
+        <div class="mb-5">
+          <iframe style="width: 100%; height: 650px;" src="https://www.google.com/maps?q=30.610845,53.196333&hl=fa&z=17&output=embed" frameborder="0" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+        </div>
+    </section>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/countup.js/1.9.3/countUp.min.js"></script>
+  </main>
+
+
+  <footer id="footer" class="footer dark-background">
+    <div class="container">
+      <div class="row gy-3">
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-geo-alt icon"></i>
+          <div class="address">
+            <h4>آدرس</h4>
+            <p>فارس،صفاشهر، ناحیه 1، بلوار امام خمینی ، جنب بانک مهر‌ایران،(خرازی زارع زاده سابق)</p>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-telephone icon"></i>
+          <div>
+            <h4>تماس با ما</h4>
+            <p>
+              <strong>شماره تماس : </strong>09172442147<span></span><br>
+              <strong>شماره تماس : </strong>07144452811<span></span><br>
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6 d-flex">
+          <i class="bi bi-clock icon"></i>
+          <div>
+            <h4>ساعات کاری</h4>
+            <p>
+              <strong>شنبه - پنچ شنبه:</strong> <span>8 الی 13 - 16 الی 21 </span><br>
+              <strong>جمعه</strong>: <span>تعطیل</span>
+            </p>
+          </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+          <h4>مارا در فضای مجازی خود دنبال کنید</h4>
+          <div class="social-links d-flex">
+          <a href="https://youtube.com/@luvndry?si=Q1RE_stlZ3phQ_7B" target="_blank" class="youtube">
+            <i class="bi bi-youtube"></i>
+          </a>
+          <a href="https://wa.me/989172442147" target="_blank" class="whatsapp">
+            <i class="bi bi-whatsapp"></i>
+          </a>
+          <a href="https://www.instagram.com/ali__laundry?igsh=a2JrbjY5MmVzcmkw" target="_blank" class="instagram">
+            <i class="bi bi-instagram"></i>
+          </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="container copyright text-center mt-4">
+      <p>© <span>Copyright</span> <strong class="px-1 sitename">Lvendry</strong><span>2025. All Rights Reserved</span></p>
+      <div class="credits">
+        Website designed & developed by <a href="https://t.me/farzad_karimi1" target="_blank">Farzad</a>. Independent Web Designer
+      </div>
+    </div>
+  </footer>
+
+
+  <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
+
+  <div id="preloader"></div>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+  <script src="{% static 'vendor/aos/aos.js' %}"></script>
+  <script src="{% static 'vendor/glightbox/js/glightbox.min.js' %}"></script>
+  <script src="{% static 'vendor/purecounter/purecounter_vanilla.js' %}"></script>
+  <script src="{% static 'vendor/swiper/swiper-bundle.min.js' %}"></script>
+  <script src="{% static 'js/main.js' %}"></script>
+
+  <div class="floating-sidebar">
+
+    <a href="#" class="floating-item" id="phone-btn">
+      <div class="circle-bg">
+        <img src="{% static 'img/images/phone.png' %}" alt="Phone">
+      </div>
+    </a>
+  
+    <a href="https://www.instagram.com/ali__laundry?igsh=a2JrbjY5MmVzcmkw" target="_blank" class="floating-item" id="instagram">
+      <div class="circle-bg">
+        <img src="{% static 'img/images/instagram.png' %}" alt="Instagram">
+      </div>
+    </a>
+  
+    <a href="https://wa.me/989172442147?text=سلام%20وقتتون%20بخیر%20،%20میخواستم%20در%20مورد%20خدمات%20خشکشویی%20سؤال%20بپرسم" target="_blank" class="floating-item" id="whatsapp">
+      <div class="circle-bg">
+        <img src="{% static 'img/images/whatsapp.png' %}" alt="WhatsApp">
+      </div>
+    </a>
+  
+  </div>
+  
+
+</body>
+</html>
