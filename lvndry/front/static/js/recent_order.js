@@ -1,4 +1,5 @@
 let filterMode = 'all';
+let orderStatus = "";
 
 function getCookie(name) {
   let cookieValue = null;
@@ -49,6 +50,9 @@ async function fetchRecentOrders(page=1){
   if (order) url += `&order_id=${encodeURIComponent(order)}`;
   if (date) url += `&order_date=${encodeURIComponent(date)}`;
   if(filterMode === 'express') url += '&is_express=true';
+  if (orderStatus) {
+      url += '&delivered=true';
+  }
 
   try {
     const res = await fetch(url);
@@ -88,27 +92,78 @@ async function fetchRecentOrders(page=1){
             const mainOrderId = item.order_id || item.id;
             div.innerHTML = `
                 <div class="order-info" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap;">
-                  <div>
-                    <b>شماره سفارش:</b> ${mainOrderId} |
-                    <b>مشتری:</b> ${item.customer_name} (${item.customer_code}) |
-                    <b>تلفن:</b> ${item.customer_phone} |
-                    <b>مبلغ قابل پرداخت:</b> ${item.final_amount}
-                  </div>
-                  <div style="display:flex; gap:10px; align-items:center;">
-                    <label>
-                      <input type="checkbox" class="status-ready-checkbox" ${item.status==='Completed' ? 'checked' : ''} onchange="toggleReadyStatus(${mainOrderId}, this)"> آماده تحویل
-                    </label>
-                    <label>
-                      <input type="checkbox" class="status-delivered-checkbox" onchange="markAsDelivered(${mainOrderId}, this)">تحویل داده شد
-                    </label>
-                  </div>
+                <div style="text-align:right; line-height:2;">
+                    <div>
+                        <b>شماره سفارش:</b> ${mainOrderId} |
+                        <b>مشتری:</b> ${item.customer_name}
+
+                        ${item.customer_level ? `
+                            <span style="
+                                display:inline-block;
+                                margin:0 6px;
+                                padding:2px 8px;
+                                border-radius:12px;
+                                font-size:12px;
+                                font-weight:bold;
+                                color:white;
+                                background:${
+                                    item.customer_level === 'طلایی' ? '#FFD700' :
+                                    item.customer_level === 'نقره‌ای' ? '#9E9E9E' :
+                                    item.customer_level === 'برنزی' ? '#CD7F32' :
+                                    '#6c757d'
+                                };
+                            ">
+                                ${item.customer_level}
+                            </span>
+                        ` : ''}
+
+                        (${item.customer_code}) |
+                        <b>تلفن:</b> ${item.customer_phone}
+                    </div>
+
+                    <div>
+                        <b>تاریخ ثبت سفارش:</b> ${item.order_date} |
+                        <b>تعداد سفارش‌های تحویل داده شده:</b> ${item.delivered_orders_count} |
+                        <b>مبلغ قابل پرداخت:</b> ${item.final_amount}
+                    </div>
                 </div>
+
+                ${orderStatus ? '' : `
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <label>
+                    <input type="checkbox"
+                            class="status-ready-checkbox"
+                            ${item.status === 'Completed' ? 'checked' : ''}
+                            onchange="toggleReadyStatus(${mainOrderId}, this)">
+                    آماده تحویل
+                    </label>
+
+                    <label>
+                    <input type="checkbox"
+                            class="status-delivered-checkbox"
+                            onchange="markAsDelivered(${mainOrderId}, this)">
+                    تحویل داده شد
+                    </label>
+                </div>
+                `}
+                </div>
+
                 <div class="order-actions" style="margin-top:5px; display:flex; justify-content:space-between; align-items:center;">
-                  <div class="left-buttons">
-                    <button class="delete-btn" onclick="deleteOrder(${mainOrderId}, '${item.customer_name}')">🗑️ حذف</button>
-                    <button class="edit-btn" onclick="window.location.href='/order_edit/${mainOrderId}/'">✏️ ویرایش</button>
-                  </div>
-                  <button onclick="showOrderDetails(${mainOrderId})">🔍 جزئیات</button>
+                ${orderStatus ? '' : `
+                <div class="left-buttons">
+                    <button class="delete-btn" onclick="deleteOrder(${mainOrderId}, '${item.customer_name}')">
+                    🗑️ حذف
+                    </button>
+
+                    <button class="edit-btn" onclick="window.location.href='/order_edit/${mainOrderId}/'">
+                    ✏️ ویرایش
+                    </button>
+                </div>
+                `}
+
+                <button onclick="showOrderDetails(${mainOrderId})">
+                    🔍 جزئیات
+                </button>
                 </div>
             `;
             container.appendChild(div);
@@ -235,19 +290,46 @@ function closeModal(){
 
 document.getElementById('modalOverlay').addEventListener('click', closeModal);
 
-document.addEventListener('DOMContentLoaded', ()=>{
-  document.getElementById('showAllBtn').addEventListener('click', ()=>{filterMode='all'; fetchRecentOrders(1);});
-  document.getElementById('showExpressBtn').addEventListener('click', ()=>{filterMode='express'; fetchRecentOrders(1);});
-  document.getElementById('searchBtn').addEventListener('click', ()=>fetchRecentOrders(1));
-  document.getElementById('resetBtn').addEventListener('click', ()=>{
-    ['searchName','searchCode','searchOrder','searchDate'].forEach(id=>document.getElementById(id).value='');
-    fetchRecentOrders(1);
-  });
-  ['searchName','searchCode','searchOrder','searchDate'].forEach(id=>{
-    const input=document.getElementById(id);
-    if(input) input.addEventListener('keypress', e=>{
-      if(e.key==='Enter'){ e.preventDefault(); fetchRecentOrders(1); }
+document.addEventListener('DOMContentLoaded', () => {
+
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+        filterMode = 'all';
+        orderStatus = "";
+        fetchRecentOrders(1);
     });
-  });
-  fetchRecentOrders(1);
+
+    document.getElementById('showExpressBtn').addEventListener('click', () => {
+        filterMode = 'express';
+        orderStatus = "";
+        fetchRecentOrders(1);
+    });
+
+    document.getElementById('showDeliveredBtn').addEventListener('click', () => {
+        filterMode = 'all';
+        orderStatus = "true";
+        fetchRecentOrders(1);
+    });
+
+    document.getElementById('searchBtn').addEventListener('click', () => fetchRecentOrders(1));
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        ['searchName', 'searchCode', 'searchOrder', 'searchDate'].forEach(id => {
+            document.getElementById(id).value = '';
+        });
+        fetchRecentOrders(1);
+    });
+
+    ['searchName', 'searchCode', 'searchOrder', 'searchDate'].forEach(id => {
+        const input = document.getElementById(id);
+        if (input) {
+            input.addEventListener('keypress', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    fetchRecentOrders(1);
+                }
+            });
+        }
+    });
+
+    fetchRecentOrders(1);
 });

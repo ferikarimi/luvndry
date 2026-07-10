@@ -20,6 +20,7 @@ function getCookie(name) {
   let clothesList  = [];
   let extraServicesList = [];
   let discountsList = [];
+  let customerDiscount = 0;
   
   
   async function fetchAllData(){
@@ -47,8 +48,10 @@ function getCookie(name) {
         total += isNaN(val) ? 0 : val;
     });
   
-    const discount = parseFloat(discountSelect.value) || 0;
-    const discountedTotal = total * (1 - discount / 100);
+    const adminDiscount = parseFloat(discountSelect.value) || 0;
+    const totalDiscount = adminDiscount + customerDiscount;
+
+    const discountedTotal = total * (1 - totalDiscount / 100);
   
     document.getElementById('grandTotal').value = discountedTotal.toFixed(0); 
   }
@@ -232,10 +235,26 @@ function updateInvoice() {
   });
 
   document.getElementById('invoiceBeforeDiscount').textContent = total.toFixed(0);
-  const discountPercent = parseFloat(discountSelect.value) || 0;
-  document.getElementById('invoiceDiscount').textContent = discountPercent ? discountPercent + '%' : 'بدون تخفیف';
 
-  const discountedTotal = total * (1 - discountPercent / 100);
+  const adminDiscount = parseFloat(discountSelect.value) || 0;
+  const totalDiscount = adminDiscount + customerDiscount;
+
+  let discountText = [];
+
+  if (customerDiscount > 0) {
+      discountText.push(`تخفیف سطح مشتری (${customerDiscount}%)`);
+  }
+
+  if (adminDiscount > 0) {
+      discountText.push(`تخفیف ویژه (${adminDiscount}%)`);
+  }
+
+  document.getElementById('invoiceDiscount').textContent =
+      discountText.length ? discountText.join(" + ") : "بدون تخفیف";
+
+  const discountedTotal = total * (1 - totalDiscount / 100);
+
+
   document.getElementById('invoiceGrandTotal').textContent = discountedTotal.toFixed(0);
 }
   
@@ -328,7 +347,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const checkBtn = document.getElementById("checkCustomerBtn");
   const phoneInput = document.querySelector("#createOrderForm input[name='phone']");
   const fullnameInput = document.querySelector("#createOrderForm input[name='fullname']");
-  const addressInput = document.querySelector("#createOrderForm input[name='address']");
+  const addressInput = document.querySelector("#createOrderForm textarea[name='address']");
+  const levelInput = document.getElementById("customerLevel");
 
   let originalCustomerData = null;
 
@@ -344,6 +364,8 @@ document.addEventListener("DOMContentLoaded", function () {
               if (data.exists === true) {
                   fullnameInput.value = data.customer.fullname || "";
                   addressInput.value = data.customer.address || "";
+                  levelInput.value = data.customer.level || "بدون سطح"
+                  customerDiscount = data.customer.discount || 0;;
                   originalCustomerData = {
                       fullname: data.customer.fullname || "",
                       address: data.customer.address || ""
@@ -352,6 +374,8 @@ document.addEventListener("DOMContentLoaded", function () {
               } else {
                   fullnameInput.value = "";
                   addressInput.value = "";
+                  levelInput.value = "";
+                  customerDiscount = 0;
                   originalCustomerData = null;
                   showPopup("مشتری با این شماره وجود ندارد!", "warning");
               }
