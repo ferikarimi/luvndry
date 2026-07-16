@@ -4,7 +4,7 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 import logging
 from rest_framework.permissions import IsAdminUser
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from .models import (
     GalleryImage , MagazineArticle , Notification
 )
@@ -76,15 +76,10 @@ class GalleryImageDetail(APIView):
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
-        try:
-            image = self.get_object(pk)
-            image.delete()
-            logger.info(f"تصویر {pk} توسط {request.user.username} حذف شد.")
-            return Response(status=status.HTTP_204_NO_CONTENT)
-        except Exception as e:
-            logger.error(f"خطا در حذف تصویر {pk} توسط {request.user.username}: {e}", exc_info=True)
-            return Response({"error": "خطا در حذف تصویر"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
+        image = self.get_object(pk)
+        image.delete()
+        logger.info(f"تصویر {pk} توسط {request.user.username} حذف شد.")
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 """
@@ -94,7 +89,7 @@ class GalleryImageDetail(APIView):
     دسترسی فقط برای ادمین مجاز است
 """
 class AdminMagazine(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [JSONParser , MultiPartParser, FormParser]
     permission_classes = [IsAdminUser]
 
     def get(self, request):
