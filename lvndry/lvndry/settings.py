@@ -14,17 +14,21 @@ from pathlib import Path
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from dotenv import load_dotenv
-load_dotenv()
+
+# import pymysql
+# pymysql.install_as_MySQLdb()
+
+
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = "asdfffffffffasdfasdfl2314kjjkff;;lik"
+SECRET_KEY = "sdfsdfa34529fasd@#$!@asdf;;lik"
 
-DEBUG = False
+DEBUG = True
 
-ALLOWED_HOSTS = ['luvndry.ir', 'www.luvndry.ir']
+# ALLOWED_HOSTS = ['luvndry.ir', 'www.luvndry.ir']
+ALLOWED_HOSTS = []
 
 
 INSTALLED_APPS = [
@@ -34,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django_extensions',
 
     'rest_framework',
     'ckeditor',
@@ -74,30 +79,35 @@ TEMPLATES = [
     },
 ]
 
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
+    }
+}
+
+
 WSGI_APPLICATION = 'lvndry.wsgi.application'
 
 
 
-import os
-
-import pymysql
-pymysql.install_as_MySQLdb()
 
 
-DATABASES = {
-    'default': {
-        'ENGINE':'django.db.backends.mysql',
-        'NAME': 'tjgwciyd_luvndry_db' ,
-        'USER': 'tjgwciyd_hamid20dey' ,
-        'PASSWORD': 'hamid20dey' ,
-        'HOST': 'localhost',
-        'PORT': '3306',
-        'OPTIONS': {
-            'charset': 'utf8mb4',
-            'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'"
-        },
-    }
-}
+# DATABASES = {
+#     'default': {
+#         'ENGINE':'django.db.backends.mysql',
+#         'NAME': 'tjgwciyd_luvndry_db' ,
+#         'USER': 'tjgwciyd_hamid20dey' ,
+#         'PASSWORD': 'hamid20dey' ,
+#         'HOST': 'localhost',
+#         'PORT': '3306',
+#         'OPTIONS': {
+#             'charset': 'utf8mb4',
+#             'init_command': "SET NAMES 'utf8mb4' COLLATE 'utf8mb4_unicode_ci'"
+#         },
+#     }
+# }
 
 
 
